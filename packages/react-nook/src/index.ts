@@ -59,7 +59,9 @@ function useHuuk() {
 
 function withScope<T>(callId: object, callback: () => T): T {
   if (!parentScope) {
-    throw new Error('Cannot call nooks top-level, only within other nooks');
+    throw new Error(
+      'Nooks can only be called within other nooks, or via a `useNook` call',
+    );
   }
   let scope = parentScope.nested.get(callId);
   if (!scope) {
