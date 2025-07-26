@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "tsdown",
-    "test:types": "tsc --noEmit"
+    "test:types": "tsc --noEmit",
+    "prepublishOnly": "automd"
   },
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -17,6 +18,11 @@
       "default": "./dist/index.js"
     }
   },
+  "files": [
+    "README.md",
+    "LICENSE",
+    "dist/**"
+  ],
   "keywords": [
     "react",
     "hooks",
@@ -33,6 +39,7 @@
   "packageManager": "pnpm@10.14.0-0+sha512.2cd47a0cbf5f1d1de7693a88307a0ede5be94e0d3b34853d800ee775efbea0650cb562b77605ec80bc8d925f5cd27c4dfe8bb04d3a0b76090784c664450d32d6",
   "devDependencies": {
     "@types/react": "^19.1.8",
+    "automd": "^0.4.0",
     "react": "^19.1.0",
     "tsdown": "catalog:build",
     "typescript": "catalog:types"
