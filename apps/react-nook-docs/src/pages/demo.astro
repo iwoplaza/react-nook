@@ -1,0 +1,17 @@
+---
+import '../styles/global.css';
+import SimpleDemo from '../components/SimpleDemo';
+---
+
+<html data-theme="light">
+  <head>
+    <title>Demo | React Nook</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/react-nook/favicon.svg" />
+    <link rel="sitemap" href="/react-nook/sitemap-index.xml" />
+  </head>
+  <body>
+    <SimpleDemo client:only="react" />
+  </body>
+</html>
