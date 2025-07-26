@@ -1,0 +1,16 @@
+packages:
+  - "packages/*"
+
+catalog:
+  arktype: ^2.1.20
+
+catalogs:
+  build:
+    tsdown: ^0.13.0
+  types:
+    typescript: ^5.8.3
+    "@webgpu/types": ^0.1.64
+  test:
+    vitest: ^3.2.4
+  frontend:
+    react: ^19.1.0
