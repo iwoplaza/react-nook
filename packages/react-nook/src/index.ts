@@ -32,7 +32,9 @@ const getOwnerComponent = () => {
 let RERENDER: ((...args: never[]) => unknown) | undefined;
 function useHuuk() {
   // Required to force re-renders 🫠
+  // biome-ignore lint/correctness/useHookAtTopLevel: this is not a normal component
   const [, rerender] = useState(0);
+  // biome-ignore lint/correctness/useHookAtTopLevel: this is not a normal component
   RERENDER = useCallback(() => {
     rerender((prev) => 1 - prev);
   }, []);
@@ -57,7 +59,7 @@ function useHuuk() {
 
 function withScope<T>(callId: object, callback: () => T): T {
   if (!parentScope) {
-    throw new Error('Invalid state');
+    throw new Error('Cannot call nooks top-level, only within other nooks');
   }
   let scope = parentScope.nested.get(callId);
   if (!scope) {
@@ -76,7 +78,7 @@ function withScope<T>(callId: object, callback: () => T): T {
 }
 
 function askState<T>(callId: object, initial: T): readonly [T, Setter<T>] {
-  let rerender = RERENDER;
+  const rerender = RERENDER;
 
   if (!parentScope) {
     throw new Error('Invalid state');

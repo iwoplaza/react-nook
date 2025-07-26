@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "outDir": "${configDir}/dist",
+    "baseUrl": "${configDir}",
+    "declaration": true,
+    "declarationMap": true,
+    "lib": ["ESNext", "DOM"],
+    "emitDeclarationOnly": true,
+    "target": "ESNext",
+    "module": "ESNext",
+    "strict": true,
+    "allowImportingTsExtensions": true,
+    "allowJs": true,
+    "esModuleInterop": true,
+    "moduleResolution": "bundler",
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "skipLibCheck": true,
+    "types": ["@vitest/browser/matchers"]
+  },
+  "exclude": ["${configDir}/dist", "${configDir}/node_modules"]
+}
