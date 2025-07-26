@@ -1,10 +1,4 @@
-import React, { type ReactNode, useCallback, useState } from 'react';
-
-const ReactSecretInternals =
-  //@ts-ignore
-  React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE ??
-  //@ts-ignore
-  React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
+import { type ReactNode, useCallback, useState } from 'react';
 
 type Setter<T> = (value: T) => void;
 
@@ -14,23 +8,23 @@ interface StateStore<T> {
 }
 
 interface Scope {
+  // biome-ignore lint/suspicious/noExplicitAny: contravariance
   stateStores: Map</* call id */ object, StateStore<any>>;
   nested: Map</* call id */ object, Scope>;
 }
 
-const topLevelScopes = new WeakMap</* fiber node */ object, Scope>();
 let parentScope: Scope | undefined;
 
-const getOwnerComponent = () => {
-  const fiberNode = ReactSecretInternals.A?.getOwner();
-  if (topLevelScopes.has(fiberNode.alternate)) {
-    return fiberNode.alternate;
-  }
-  return fiberNode;
-};
-
 let RERENDER: ((...args: never[]) => unknown) | undefined;
-function useHuuk() {
+
+function createScope(): Scope {
+  return {
+    stateStores: new Map(),
+    nested: new Map(),
+  };
+}
+
+function useTopLevelScope() {
   // Required to force re-renders 🫠
   // biome-ignore lint/correctness/useHookAtTopLevel: this is not a normal component
   const [, rerender] = useState(0);
@@ -38,16 +32,8 @@ function useHuuk() {
   RERENDER = useCallback(() => {
     rerender((prev) => 1 - prev);
   }, []);
-  const ownerComponent = getOwnerComponent();
-  let scope = topLevelScopes.get(ownerComponent);
-  if (!scope) {
-    console.log('Creating a top-level scope');
-    scope = {
-      stateStores: new Map(),
-      nested: new Map(),
-    } satisfies Scope;
-    topLevelScopes.set(ownerComponent, scope);
-  }
+  // biome-ignore lint/correctness/useHookAtTopLevel: this is not a normal component
+  const [scope] = useState(createScope);
   parentScope = scope;
 
   return () => {
@@ -65,7 +51,6 @@ function withScope<T>(callId: object, callback: () => T): T {
   }
   let scope = parentScope.nested.get(callId);
   if (!scope) {
-    console.log('Creating a nested scope');
     scope = {
       stateStores: new Map(),
       nested: new Map(),
@@ -93,7 +78,6 @@ function askState<T>(callId: object, initial: T): readonly [T, Setter<T>] {
       setter: (newValue: T) => {
         newStore.value = newValue;
         rerender?.();
-        console.log(`Updating to ${newValue}`);
       },
     };
     store = newStore;
@@ -105,7 +89,7 @@ function askState<T>(callId: object, initial: T): readonly [T, Setter<T>] {
 
 // const huuk = {
 //   wrap: () => {},
-//   use: useHuuk,
+//   use: useTopLevelScope,
 //   state(strings: TemplateStringsArray) {
 //     function temp<T>(initial: T) {
 //       return askState(strings, initial);
@@ -114,20 +98,13 @@ function askState<T>(callId: object, initial: T): readonly [T, Setter<T>] {
 //   },
 // };
 
-interface Huuk1 {
-  state: <T>(
-    strings: TemplateStringsArray,
-    initial: T,
-  ) => readonly [T, Setter<T>];
-}
-
-interface Huuk2 {
+interface NookContext {
   state: (
     strings: TemplateStringsArray,
   ) => <T>(initial: T) => readonly [T, Setter<T>];
 }
 
-const huukInstance: Huuk2 = {
+const huukInstance: NookContext = {
   state:
     (strings: TemplateStringsArray) =>
     <T>(initial: T) =>
@@ -135,10 +112,10 @@ const huukInstance: Huuk2 = {
 };
 
 export const nookComponent = <TProps extends Record<string, unknown>>(
-  Component: (huuk: Huuk2, props: TProps) => ReactNode,
+  Component: (ctx: NookContext, props: TProps) => ReactNode,
 ) => {
   return (props: TProps) => {
-    const dehuuk = useHuuk();
+    const dehuuk = useTopLevelScope();
     const result = Component(huukInstance, props);
     dehuuk();
     return result;
@@ -151,11 +128,12 @@ interface Nook<TArgs extends unknown[], TReturn> {
 }
 
 export const nook = <TArgs extends unknown[], TReturn>(
-  def: (huuk: Huuk2, ...args: TArgs) => TReturn,
+  def: (ctx: NookContext, ...args: TArgs) => TReturn,
 ): Nook<TArgs, TReturn> => {
   return ((maybeStrings: unknown) => {
     if (Array.isArray(maybeStrings)) {
       // Calling it as a nook inside a component or nook
+      // ---
 
       return (...args: TArgs) =>
         withScope(maybeStrings, () => {
@@ -164,10 +142,12 @@ export const nook = <TArgs extends unknown[], TReturn>(
     }
 
     // Calling it as a component
+    // ---
+
     // biome-ignore lint/correctness/useHookAtTopLevel: this is not a normal component
-    const dehuuk = useHuuk();
+    const detach = useTopLevelScope();
     const result = def(huukInstance, ...([maybeStrings] as TArgs));
-    dehuuk();
+    detach();
     return result;
   }) as Nook<TArgs, TReturn>;
 };
