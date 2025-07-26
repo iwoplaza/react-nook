@@ -1,7 +1,7 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.1.2/schema.json",
   "files": {
-    "includes": ["**/*.ts", "**/*.mjs", "!.astro"]
+    "includes": ["**/*.ts", "**/*.tsx", "**/*.mjs", "!.astro"]
   },
   "linter": {
     "enabled": true,
@@ -19,6 +19,7 @@
     "assist": {
       "enabled": true
     },
+    "jsxRuntime": "transparent",
     "formatter": {
       "indentStyle": "space",
       "quoteStyle": "single"

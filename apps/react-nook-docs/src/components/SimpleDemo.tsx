@@ -1,18 +1,37 @@
-import { useState } from "react";
+import { nookComponent, nook } from "react-nook";
 
-const Widget = () => {
-  const [count, setCount] = useState(0);
+const counterNook = nook(({ state }) => {
+  const [count, setCount] = state``(0);
 
   const increment = () => {
-    console.log(`I am clicking...`);
     setCount(count + 1);
   };
 
-  return <div className="grid gap-2 max-w-sm place-items-center mx-auto mt-12">
-    <p>Count: {count}</p>
-    <button type="button" onClick={increment} className="bg-red-50 active:bg-red-100 rounded-sm px-4 py-1.5">Increment</button>
-  </div>
-}
+  return [count, increment] as const;
+});
+
+const Counter = nook(({ state }) => {
+  return <p>Hello</p>;
+});
+
+const Btn = (props: { onClick: () => unknown, children?: React.ReactNode }) => {
+  return <button type="button" onClick={props.onClick} className="bg-red-50 active:bg-red-100 rounded-sm px-4 py-1.5">{props.children}</button>
+};
+
+const Widget = nook(({ state }) => {
+  const [alternate, setAlternate] = state``(false);
+  const [count, increment] = alternate ? counterNook``() : counterNook``();
+
+  return (
+    <div className="grid gap-2 max-w-sm place-items-center mx-auto mt-12">
+      <p>Count: {count}</p>
+      <Btn onClick={increment}>Increment</Btn>
+      <Btn onClick={() => setAlternate(false)}>Use main counter</Btn>
+      <Btn onClick={() => setAlternate(true)}>Use alternate counter</Btn>
+      <Counter />
+    </div>
+  )
+});
 
 export default function SimpleDemo() {
   return <Widget />

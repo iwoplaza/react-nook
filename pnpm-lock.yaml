@@ -59,7 +59,14 @@ importers:
         version: 4.1.11
 
   packages/react-nook:
+    dependencies:
+      react:
+        specifier: ^19.0.0
+        version: 19.1.0
     devDependencies:
+      '@types/react':
+        specifier: ^19.1.8
+        version: 19.1.8
       tsdown:
         specifier: catalog:build
         version: 0.13.0(typescript@5.8.3)
