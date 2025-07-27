@@ -1,6 +1,6 @@
 ---
 import '../styles/global.css';
-import DemoSwappableStore from '../components/demo-swappable-store';
+import DemoSwappingBehavior from '../components/demo-swapping-behavior';
 import DemoGranularMount from '../components/demo-granular-mount';
 import { DemoHookInANook } from '../components/demo-hook-in-a-nook';
 ---
@@ -14,8 +14,8 @@ import { DemoHookInANook } from '../components/demo-hook-in-a-nook';
     <link rel="sitemap" href="/react-nook/sitemap-index.xml" />
   </head>
   <body>
-    <h2 class="text-center text-2xl mt-20 mb-2">Swappable store</h2>
-    <DemoSwappableStore client:only="react" />
+    <h2 class="text-center text-2xl mt-20 mb-2">Swapping behavior</h2>
+    <DemoSwappingBehavior client:only="react" />
     <h2 class="text-center text-2xl mt-20 mb-2">Granular mount</h2>
     <DemoGranularMount client:only="react" />
     <h2 class="text-center text-2xl mt-20 mb-2">Hook in a nook</h2>

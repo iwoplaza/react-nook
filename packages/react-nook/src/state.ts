@@ -14,8 +14,7 @@ export function callExpressionTrackedState<T>(
 
   let cachedStore = scope.children.get(callId) as StateStore | undefined;
   if (!cachedStore) {
-    const store = {
-      type: 'state' as const,
+    const store: StateStore<T> = {
       value: initial,
       setter: (valueOrCompute: T | ((prev: T) => T)) => {
         if (typeof valueOrCompute === 'function') {

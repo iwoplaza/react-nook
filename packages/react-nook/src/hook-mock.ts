@@ -1,8 +1,9 @@
 import React from 'react';
+import { callOrderTrackedCallback } from './callback.ts';
 import { CTX } from './ctx.ts';
 import { callOrderTrackedEffect } from './effect.ts';
 import { callOrderTrackedState } from './state.ts';
-import type { EffectCleanup } from './types.ts';
+import type { AnyFn, EffectCleanup } from './types.ts';
 
 const ReactSecretInternals =
   //@ts-ignore
@@ -19,10 +20,10 @@ export function mockHooks() {
 
   const origUseState = ReactSecretInternals.H.useState;
   const origUseEffect = ReactSecretInternals.H.useEffect;
+  const origUseCallback = ReactSecretInternals.H.useCallback;
 
-  ReactSecretInternals.H.useState = (valueOrCompute: unknown) => {
-    return callOrderTrackedState(valueOrCompute);
-  };
+  ReactSecretInternals.H.useState = (valueOrCompute: unknown) =>
+    callOrderTrackedState(valueOrCompute);
 
   ReactSecretInternals.H.useEffect = (
     cb: () => EffectCleanup,
@@ -31,8 +32,14 @@ export function mockHooks() {
     callOrderTrackedEffect(cb, deps);
   };
 
+  ReactSecretInternals.H.useCallback = (
+    cb: AnyFn,
+    deps?: unknown[] | undefined,
+  ) => callOrderTrackedCallback(cb, deps);
+
   return () => {
     ReactSecretInternals.H.useState = origUseState;
     ReactSecretInternals.H.useEffect = origUseEffect;
+    ReactSecretInternals.H.useCallback = origUseCallback;
   };
 }

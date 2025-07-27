@@ -2,22 +2,42 @@ import { useCallback, useEffect, useState } from 'react';
 import { nook } from 'react-nook';
 import { Btn } from './common';
 
-const FROG_FRAMES = [
-  '(◦°^°◦  )',
-  '( ◦°^°◦ )',
-  '(  ◦°^°◦)',
-  '(   ◦°^°)',
-  '(|    ◦°)',
-  '( |     )',
-  '(  |    )',
-  '(   |   )',
-  '(    |  )',
-  '(     | )',
-  '(°◦    |)',
-  '(°^°◦   )',
+const WALKING_FRAMES = [
+  `\
+ /\\_/\\__
+(◦°^°◦  )\\
+  ' \`\` '`,
+  `\
+ /\\_/\\__
+(◦°^°◦  )\\
+  ' \`' \``,
+  `\
+ /\\_/\\__
+(.◦^◦.  )\\
+  \` '' \``,
+  `\
+ _/\\_/\\_
+( .◦^◦. )\\
+  \` '\` '`,
+  `\
+ _/\\_/\\_
+( ◦°^°◦ )\\
+  ' \`\` '`,
+  `\
+ _/\\_/\\_
+( ◦°^°◦ )\\
+  ' \`' \``,
+  `\
+ _/\\_/\\_
+( .◦^◦. )\\
+  \` '' \``,
+  `\
+ /\\_/\\__
+(.◦^◦.  )\\
+  \` '\` '`,
 ];
 
-const CAT_FRAMES = [
+const LOOKING_FRAMES = [
   `\
  /\\_/\\
 ( o.o )
@@ -93,26 +113,26 @@ const $interval = nook((callback: () => unknown, interval: number) => {
 // Nooks are just functions that can use other nooks, so they can also be components!
 const DemoGranularMount = nook(() => {
   // Animation state
-  const [frogIdx, incrementFrogIdx] = useModuloCounter(FROG_FRAMES.length);
-  const [catIdx, incrementCatIdx] = useModuloCounter(CAT_FRAMES.length);
+  const [walkIdx, incrementWalkIdx] = useModuloCounter(WALKING_FRAMES.length);
+  const [lookIdx, incrementLookIdx] = useModuloCounter(LOOKING_FRAMES.length);
   const [frogActive, toggleFrog] = useToggle(true);
   const [catActive, toggleCat] = useToggle(true);
 
   // Animation behavior
   if (frogActive) {
-    $interval``(incrementFrogIdx, 50);
+    $interval``(incrementWalkIdx, 200);
   }
   if (catActive) {
-    $interval``(incrementCatIdx, 100);
+    $interval``(incrementLookIdx, 100);
   }
 
   return (
     <div className="grid gap-2 max-w-sm place-items-center mx-auto mt-12 grid-cols-2">
       <pre className={frogActive ? '' : 'opacity-50'}>
-        <code>{FROG_FRAMES[frogIdx]}</code>
+        <code>{WALKING_FRAMES[walkIdx]}</code>
       </pre>
       <pre className={catActive ? '' : 'opacity-50'}>
-        <code>{CAT_FRAMES[catIdx]}</code>
+        <code>{LOOKING_FRAMES[lookIdx]}</code>
       </pre>
       <Btn onClick={toggleFrog}>{frogActive ? 'Pause' : 'Play'}</Btn>
       <Btn onClick={toggleCat}>{catActive ? 'Pause' : 'Play'}</Btn>

@@ -3,6 +3,8 @@ export type Setter<T> = ((value: T) => void) &
 
 export type EffectCleanup = () => void;
 
+export type AnyFn = (...args: never[]) => unknown;
+
 // biome-ignore lint/suspicious/noExplicitAny: contravariance
 export interface StateStore<T = any> {
   value: T;
@@ -17,7 +19,7 @@ export interface EffectStore {
 }
 
 export interface CallbackStore<T = unknown> {
-  value: T;
+  callback: T;
   deps: unknown[] | undefined;
   unmount?: undefined;
 }

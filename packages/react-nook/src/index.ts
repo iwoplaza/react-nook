@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
+import { callExpressionTrackedCallback } from './callback.ts';
 import { CTX } from './ctx.ts';
 import { callExpressionTrackedEffect } from './effect.ts';
 import { mockHooks } from './hook-mock.ts';
 import { callExpressionTrackedState } from './state.ts';
-import type { EffectCleanup, Scope } from './types.ts';
+import type { AnyFn, EffectCleanup, Scope } from './types.ts';
 
 function createScope(): Scope {
   return {
@@ -139,18 +140,20 @@ function withScope<T>(callId: object, callback: () => T): T {
   return result;
 }
 
-export const nookState =
+export const $state =
   (strings: TemplateStringsArray) =>
   <T>(initial: T) =>
     callExpressionTrackedState(strings, initial);
 
-export const nookEffect =
+export const $effect =
   (strings: TemplateStringsArray) =>
   (callback: () => EffectCleanup, deps?: unknown[] | undefined) =>
     callExpressionTrackedEffect(strings, callback, deps);
 
-export const $state = nookState;
-export const $effect = nookEffect;
+export const $callback =
+  (strings: TemplateStringsArray) =>
+  <T extends AnyFn>(callback: T, deps?: unknown[] | undefined) =>
+    callExpressionTrackedCallback(strings, callback, deps);
 
 interface Nook<TArgs extends unknown[], TReturn> {
   (strings: TemplateStringsArray): (...args: TArgs) => TReturn;
