@@ -1,0 +1,17 @@
+---
+import { applyCuts } from '../../../lib/apply-cuts';
+import SwappingBehavior from './swapping-behavior';
+import code from './swapping-behavior?raw';
+
+import { Code } from '@astrojs/starlight/components';
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+---
+
+<article>
+  <Tabs>
+    <TabItem label="demo-timer.tsx">
+      <Code code={applyCuts(code)} lang="tsx" />
+    </TabItem>
+  </Tabs>
+  <SwappingBehavior client:only="react" />
+</article>

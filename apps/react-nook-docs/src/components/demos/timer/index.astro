@@ -1,0 +1,21 @@
+---
+import Timer from './timer';
+import code from './timer?raw';
+import code__useTimer from './use-timer?raw';
+
+import { Code } from '@astrojs/starlight/components';
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { applyCuts } from '../../../lib/apply-cuts';
+---
+
+<article class="grid lg:grid-cols-2 min-h-[38rem]">
+  <Tabs>
+    <TabItem label="main.tsx">
+      <Code code={applyCuts(code)} lang="tsx" />
+    </TabItem>
+    <TabItem label="use-timer.ts">
+      <Code code={applyCuts(code__useTimer)} lang="tsx" />
+    </TabItem>
+  </Tabs>
+  <Timer client:only="react" />
+</article>

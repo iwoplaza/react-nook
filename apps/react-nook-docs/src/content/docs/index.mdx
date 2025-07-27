@@ -4,29 +4,94 @@ description: An alternate reality where React hooks can be called conditionally.
 template: splash
 hero:
   tagline: An alternate reality where React hooks can be called conditionally.
-  actions:
-    - text: Get started
-      link: /react-nook/guides/getting-started/
-      icon: right-arrow
-    - text: See demo
-      link: /react-nook/demo/
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
+import Timer from '../../components/demos/timer/index.astro';
+import GranularMount from '../../components/demos/granular-mount/index.astro';
+import SwappingBehavior from '../../components/demos/swapping-behavior/index.astro';
 
-## Next steps
+{/* You can install *React Nook* with your favorite package manager. If you're curious about what the library's about, keep reading! */}
 
-<CardGrid stagger>
-	<Card title="Update content" icon="pencil">
-		Edit `src/content/docs/index.mdx` to see this page change.
-	</Card>
-	<Card title="Add new content" icon="add-document">
-		Add Markdown or MDX files to `src/content/docs` to create new pages.
-	</Card>
-	<Card title="Configure your site" icon="setting">
-		Edit your `sidebar` and other config in `astro.config.mjs`.
-	</Card>
-	<Card title="Read the docs" icon="open-book">
-		Learn more in [the Starlight Docs](https://starlight.astro.build/).
-	</Card>
-</CardGrid>
+```sh
+npm install react-nook
+```
+
+## The problem with React Hooks
+
+React = Composable UI, and with the introduction of hooks, that composability soared to the next level! The promise of reusable behavior across components
+is not all sunshine and rainbows though. To achieve their goal, the React team had to impose [certain limitations on hook use, known as the "Rules of Hooks"](https://react.dev/reference/rules/rules-of-hooks). This mostly boils down to:
+- Only call Hooks at the top level (outside of control-flow)
+- Only call Hooks from React functions (components or other hooks)
+
+The latter is reasonable and I don't think anyone is arguing about it, whereas the former can be a pain when working in bigger projects.
+When writing custom hooks, we rarely plan around someone wanting to skip the hook's execution based on a condition.
+
+```ts
+/**
+ * @returns seconds passed since mount
+ */
+export function useSeconds() {
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    const handle = setInterval(() => setValue((prev) => prev + 1), 1000);
+    return () => clearInterval(handle);
+  });
+
+  return value;
+}
+
+function Widget() {
+  const seconds = useSeconds();
+}
+```
+
+Now say we want to count up only when the widget is "active". It's easy enough for this simple use case, but for more complex hooks, a refactor
+like this can be quite involved.
+
+```ts {1, 5, 9}
+export function useSeconds(active: boolean) {
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    if (!active) return;
+
+    const handle = setInterval(() => setValue((prev) => prev + 1), 1000);
+    return () => clearInterval(handle);
+  }, [active]);
+
+  return value;
+}
+
+function Widget(props) {
+  const seconds = useSeconds(props.active);
+}
+```
+
+What if we want to reset the count every time it becomes active again? Well then we're out of luck, we have to split the components and mount based
+on this condition. **What if we could just use hooks conditionally?**
+
+## A note on design goals
+
+Before I explain what "nooks" are, I want to emphasize that they're not a replacement for hooks, **they make existing hooks better**.
+Don't worry about having to rewrite all of your favorite custom hooks.
+
+:::note[(◦°^°◦ )]{icon="heart"}
+You can use *nooks* inside of *hooks*, and *hooks* inside of *nooks*! They're cozy like that.
+:::
+
+The library also does not replace the React runtime in any way, nor does it require a build-step to work. [React Nook uses a niche property
+of tagged template literals, and is described in more details here.](#how-does-it-work)
+
+## Timer
+
+<Timer />
+
+### Granular mount
+
+<GranularMount />
+
+## How does it work?
+
+(work-in-progress)

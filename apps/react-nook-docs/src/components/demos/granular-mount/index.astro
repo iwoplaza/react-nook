@@ -1,0 +1,17 @@
+---
+import { applyCuts } from '../../../lib/apply-cuts';
+import DemoGranularMount from './granular-mount';
+import code from './granular-mount?raw';
+
+import { Code } from '@astrojs/starlight/components';
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+---
+
+<article class="grid lg:grid-cols-2 min-h-[38rem] **:[pre]:mt-0">
+  <Tabs>
+    <TabItem label="main.tsx">
+      <Code code={applyCuts(code)} lang="tsx" />
+    </TabItem>
+  </Tabs>
+  <DemoGranularMount client:only="react" />
+</article>

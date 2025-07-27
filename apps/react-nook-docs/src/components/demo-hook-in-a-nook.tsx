@@ -1,5 +1,5 @@
 import { nook } from 'react-nook';
-import { Btn, useCounter } from './common';
+import { Btn, useCounter } from './demos/common';
 
 export const DemoHookInANook = nook(() => {
   const [count, increment] = useCounter();

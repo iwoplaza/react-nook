@@ -10,7 +10,7 @@ export const Btn = (props: {
     <button
       type="button"
       onClick={props.onClick}
-      className={`bg-red-50 active:bg-red-100 rounded-sm px-4 py-1.5 ${props.className} ${props.highlighted ? 'outline-2' : ''}`}
+      className={`bg-red-50 dark:bg-gray-800 active:bg-red-100 dark:active:bg-gray-700 rounded-sm mt-0 px-4 py-1.5 ${props.className} ${props.highlighted ? 'outline-2' : ''}`}
     >
       {props.children}
     </button>

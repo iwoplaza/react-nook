@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { nook } from 'react-nook';
-import { Btn } from './common';
+import { Btn } from '../common';
 
 function useIncrement(initial: number) {
   const [value, setValue] = useState(initial);

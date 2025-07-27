@@ -11,11 +11,12 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'React Nook',
+      customCss: ['./src/styles/global.css'],
       social: [
         {
           icon: 'github',
           label: 'GitHub',
-          href: 'https://github.com/withastro/starlight',
+          href: 'https://github.com/iwoplaza/react-nook',
         },
       ],
       sidebar: [
