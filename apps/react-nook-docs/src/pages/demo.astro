@@ -1,6 +1,6 @@
 ---
 import '../styles/global.css';
-import SimpleDemo from '../components/SimpleDemo';
+import DemoSwappableStore from '../components/demo-swappable-store';
 ---
 
 <html data-theme="light">
@@ -12,6 +12,7 @@ import SimpleDemo from '../components/SimpleDemo';
     <link rel="sitemap" href="/react-nook/sitemap-index.xml" />
   </head>
   <body>
-    <SimpleDemo client:only="react" />
+    <h2 class="text-center text-2xl my-2">Swappable store</h2>
+    <DemoSwappableStore client:only="react" />
   </body>
 </html>

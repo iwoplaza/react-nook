@@ -104,11 +104,16 @@ interface NookContext {
   ) => <T>(initial: T) => readonly [T, Setter<T>];
 }
 
+export const stateNook =
+  (strings: TemplateStringsArray) =>
+  <T>(initial: T) =>
+    askState(strings, initial);
+
+export const $state = stateNook;
+export const nookState = stateNook;
+
 const huukInstance: NookContext = {
-  state:
-    (strings: TemplateStringsArray) =>
-    <T>(initial: T) =>
-      askState(strings, initial),
+  state: stateNook,
 };
 
 export const nookComponent = <TProps extends Record<string, unknown>>(
@@ -128,7 +133,7 @@ interface Nook<TArgs extends unknown[], TReturn> {
 }
 
 export const nook = <TArgs extends unknown[], TReturn>(
-  def: (ctx: NookContext, ...args: TArgs) => TReturn,
+  def: (...args: TArgs) => TReturn,
 ): Nook<TArgs, TReturn> => {
   return ((maybeStrings: unknown) => {
     if (Array.isArray(maybeStrings)) {
@@ -137,7 +142,7 @@ export const nook = <TArgs extends unknown[], TReturn>(
 
       return (...args: TArgs) =>
         withScope(maybeStrings, () => {
-          return def(huukInstance, ...args);
+          return def(...args);
         });
     }
 
@@ -146,7 +151,7 @@ export const nook = <TArgs extends unknown[], TReturn>(
 
     // biome-ignore lint/correctness/useHookAtTopLevel: this is not a normal component
     const detach = useTopLevelScope();
-    const result = def(huukInstance, ...([maybeStrings] as TArgs));
+    const result = def(...([maybeStrings] as TArgs));
     detach();
     return result;
   }) as Nook<TArgs, TReturn>;
