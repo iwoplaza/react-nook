@@ -10,12 +10,25 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 import Timer from '../../components/demos/timer/index.astro';
 import GranularMount from '../../components/demos/granular-mount/index.astro';
 import SwappingBehavior from '../../components/demos/swapping-behavior/index.astro';
+import Nook from '../../components/nook-lower.astro';
+import NNook from '../../components/nook-upper.astro';
+import Nooks from '../../components/nooks-lower.astro';
+import NNooks from '../../components/nooks-upper.astro';
+import Hook from '../../components/hook-lower.astro';
+import HHook from '../../components/hook-upper.astro';
+import Hooks from '../../components/hooks-lower.astro';
+import HHooks from '../../components/hooks-upper.astro';
 
 {/* You can install *React Nook* with your favorite package manager. If you're curious about what the library's about, keep reading! */}
 
 ```sh
 npm install react-nook
 ```
+
+:::caution
+*React Nook* is in early development. If you encounter any issues, or have feature requests, [don't hesitate to file them in the GitHub repository!](https://github.com/iwoplaza/react-nook/issues)
+:::
+
 
 ## The problem with React Hooks
 
@@ -72,10 +85,10 @@ function Widget(props) {
 What if we want to reset the count every time it becomes active again? Well then we're out of luck, we have to split the components and mount based
 on this condition. **What if we could just use hooks conditionally?**
 
-## A note on design goals
+## An enhancement, not a replacement
 
-Before I explain what "nooks" are, I want to emphasize that they're not a replacement for hooks, **they make existing hooks better**.
-Don't worry about having to rewrite all of your favorite custom hooks.
+Before I explain what <Nooks /> are, I want to emphasize that they're not a replacement for <Hooks />, **they make existing hooks better**.
+Don't worry about having to rewrite your existing logic.
 
 :::note[(◦°^°◦ )]{icon="heart"}
 You can use *nooks* inside of *hooks*, and *hooks* inside of *nooks*! They're cozy like that.
@@ -84,7 +97,109 @@ You can use *nooks* inside of *hooks*, and *hooks* inside of *nooks*! They're co
 The library also does not replace the React runtime in any way, nor does it require a build-step to work. [React Nook uses a niche property
 of tagged template literals, and is described in more details here.](#how-does-it-work)
 
-## Timer
+{/* ## It's safe to call hooks conditionally in nooks - places where it's safe to call hooks conditionally */}
+{/* ## Lay back in the nook, and relax limitations */}
+## Nooks love you conditionally
+
+<NNooks /> are places in your codebase where "Rules of Hooks" can finally lay back and relax...
+
+{/* Let's go over the relationship between 🪝 hooks and 📦 nooks
+- 🪝 hooks **CANNOT** use other 🪝 hooks conditionally
+- 🪝 hooks can use 📦 nooks conditionally: `useNook(...)`
+- 📦 nooks can use other 📦 nooks conditionally: `$foo``(...)`
+- 📦 nooks can use 🪝 nooks conditionally: `nook(useFoo)` */}
+
+Let's go over the relationship between <Hooks /> and <Nooks />
+- <Hooks /> **CANNOT** use other <Hooks /> conditionally
+- <Hooks /> can use <Nooks /> conditionally: `useNook(...)`
+- <Nooks /> can use other <Nooks /> conditionally: `$foo``(...)`
+- <Nooks /> can use <Hooks /> conditionally: `nook(useFoo)`
+
+### Creating nooks
+The easiest way to create a <Nook /> is to wrap an existing <Hook />.
+
+```ts
+// A regular React hook
+function useToggle(initial: boolean) {
+  const [value, setValue] = useState(initial);
+  const toggle = useCallback(() => setValue((prev) => !prev), []);
+
+  return [value, toggle] as const;
+}
+
+// A nook with the same behavior
+const $toggle = nook(useToggle);
+```
+
+If you're just now beginning to write these <Hooks />, you may want to write them as <Nooks /> to begin with!
+
+```ts
+const $toggle = nook((initial: boolean) => {
+  const [value, setValue] = useState(initial);
+  const toggle = useCallback(() => setValue((prev) => !prev), []);
+
+  return [value, toggle] as const;
+});
+```
+
+The convention is to name nooks starting with a `$` sign, just to visually differentiate <Nooks /> from <Hooks />.
+
+### Using nooks
+
+The <Nooks /> API can seem strange as first, but you get used to it. To use `$foo` we append an empty template to it, then call the result:
+```ts
+$foo``(first_arg, second_arg, ...);
+```
+Compared to the <Hooks /> version:
+```ts
+useFoo(first_arg, second_arg, ...);
+```
+
+This small change allows the library to track based on which expression was called, instead of in which order.
+[You can learn more about the technical details below](#how-does-it-work)
+
+#### Inside components or hooks
+To use nooks inside regular components or hooks, reach for `useNook`.
+
+```ts
+function Component(props) {
+  // ...
+  const [value, toggle] = useNook(() => {
+    // Aahh... all cozy and nice
+    if (props.active) {
+      return $toggle``();
+    }
+    // If not active, return a fallback and a noop
+    return ['Inactive', () => {}];
+  });
+  // ...
+}
+```
+
+#### Inside other nooks
+
+No additional wrapper is necessary in this case:
+```ts
+const $timer = nook(() => {
+  const [value, setValue] = useState(0);
+  // ...
+  return value;
+});
+
+const $timerWithToggle = nook((initialActive: boolean) => {
+  const [active, setActive] = useState(initialActive);
+  // Resets each time we toggle active, because the timer gets unmounted
+  const time = active ? $timer``() : 0;
+
+  const toggle = useCallback(() => setActive((prev) => !prev), []);
+
+  return [time, toggle];
+});
+```
+
+## Demos
+
+### Timer
 
 <Timer />
 
@@ -94,4 +209,4 @@ of tagged template literals, and is described in more details here.](#how-does-i
 
 ## How does it work?
 
-(work-in-progress)
+(explanation-in-progress)

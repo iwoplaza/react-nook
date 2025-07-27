@@ -1,10 +1,10 @@
 // biome-ignore assist/source/organizeImports: better for docs
 import { useState } from 'react';
 import { Btn } from '../common';
-// ---cut-before---
 import { nook } from 'react-nook';
 import { useTimer } from './use-timer';
 
+// ---cut-before---
 // Turn any hook into a ✨ nook ✨
 const $timer = nook(useTimer);
 

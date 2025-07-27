@@ -2,6 +2,8 @@
 import { applyCuts } from '../../../lib/apply-cuts';
 import DemoGranularMount from './granular-mount';
 import code from './granular-mount?raw';
+import code__hooks from './hooks?raw';
+// import code__ascii from './ascii?raw';
 
 import { Code } from '@astrojs/starlight/components';
 import { Tabs, TabItem } from '@astrojs/starlight/components';
@@ -12,6 +14,12 @@ import { Tabs, TabItem } from '@astrojs/starlight/components';
     <TabItem label="main.tsx">
       <Code code={applyCuts(code)} lang="tsx" />
     </TabItem>
+    <TabItem label="hooks.ts">
+      <Code code={applyCuts(code__hooks)} lang="tsx" />
+    </TabItem>
+    <!-- <TabItem label="ascii.ts">
+      <Code code={applyCuts(code__ascii)} lang="tsx" />
+    </TabItem> -->
   </Tabs>
   <DemoGranularMount client:only="react" />
 </article>
