@@ -2,7 +2,7 @@
 
 <div align="center">
 
-# ⚛︎ nook
+# ⚛︎ React Nook
 
 An alternate reality where React hooks can be called conditionally.
 
@@ -12,69 +12,25 @@ An alternate reality where React hooks can be called conditionally.
 
 ## Getting started
 
+Install using your favorite package manager:
+
 ```sh
 npm install react-nook
 ```
 
-## Basic recipes
+Then import it into your project:
 
-### Turning existing hooks into nooks
-```tsx
+```ts
 import { nook } from 'react-nook';
 
-// A custom React hook, nothing fancy here
-function useTimer() {
-  const [value, setValue] = useState(0);
-
-  useEffect(() => {
-    const handle = setInterval(() => {
-      setValue(prev => prev + 1);
-    }, interval);
-
-    return () => clearInterval(handle);
-  }, [interval]);
-};
-
-// Turn any hook into a nook!
-const $timer = nook(useTimer);
-
-// Either use nooks in vanilla components ...
-function App() {
-  const [active, setActive] = useState(false);
-
-  // Only using `$timer` when active
-  const time = useNook(() => active ? $timer``() : 0);
-
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setActive(prev => !prev)}
-      >
-        Toggle
-      </button>
-      <p>Time: {time}</p>
-    </>
-  );
-}
-
-// ... or make the component a nook!
-const App = nook(() => {
-  const [active, setActive] = useState(false);
-
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setActive(prev => !prev)}
-      >
-        Toggle
-      </button>
-      {/* Only using `$timer` when active */}
-      <p>Time: {active ? $timer``() : 0}</p>
-    </>
-  );
-});
+// ✨ Create conditional nooks from your
+// existing library of hooks, no rewrite
+// necessary!
+const $myFeature = nook(useMyFeature);
 ```
+
+## Documentation
+
+[Visit the React Nook docs](https://iwoplaza.dev/react-nook) to learn how to give your existing hooks the ability to run conditionally. You can also find demos to play with!
 
 <!-- /automd -->
