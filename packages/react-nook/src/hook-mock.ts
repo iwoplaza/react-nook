@@ -11,16 +11,30 @@ const ReactSecretInternals =
   //@ts-ignore
   React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
 
+let WARNED = false;
+
 export function mockHooks() {
   const scope = CTX.parentScope;
   if (!scope || !ReactSecretInternals || !ReactSecretInternals.H) {
     // Let's just not mock anything
+    if (!WARNED) {
+      console.warn(
+        'Cannot nook-ify hooks in this environment. Please file an issue on GitHub',
+      );
+      console.dir(ReactSecretInternals);
+      WARNED = true;
+    }
     return () => {};
   }
 
-  const origUseState = ReactSecretInternals.H.useState;
-  const origUseEffect = ReactSecretInternals.H.useEffect;
-  const origUseCallback = ReactSecretInternals.H.useCallback;
+  const originals = Object.entries(ReactSecretInternals.H);
+  for (const key of Object.keys(ReactSecretInternals.H)) {
+    ReactSecretInternals.H[key] = () => {
+      throw new Error(
+        `Cannot use '${key}' inside nooks yet. Please file an issue and tell us about your use-case.`,
+      );
+    };
+  }
 
   ReactSecretInternals.H.useState = (valueOrCompute: unknown) =>
     callOrderTrackedState(valueOrCompute);
@@ -38,8 +52,8 @@ export function mockHooks() {
   ) => callOrderTrackedCallback(cb, deps);
 
   return () => {
-    ReactSecretInternals.H.useState = origUseState;
-    ReactSecretInternals.H.useEffect = origUseEffect;
-    ReactSecretInternals.H.useCallback = origUseCallback;
+    for (const [key, value] of originals) {
+      ReactSecretInternals.H[key] = value;
+    }
   };
 }

@@ -89,11 +89,14 @@ function useTopLevelScope<T>(cb: () => T): T {
   CTX.parentScope = scope;
   CTX.rerenderRequested = false;
 
-  const result = setupScope(cb);
-
-  // Cleanup
-  CTX.parentScope = undefined;
-  CTX.rerender = undefined;
+  let result: T;
+  try {
+    result = setupScope(cb);
+  } finally {
+    // Cleanup
+    CTX.parentScope = undefined;
+    CTX.rerender = undefined;
+  }
 
   // This effect should run after every render
   // biome-ignore lint/correctness/useHookAtTopLevel: this is not a normal component
@@ -131,12 +134,19 @@ function withScope<T>(callId: object, callback: () => T): T {
     // Please don't delete me during this render
     CTX.parentScope.scheduledUnmounts.delete(callId);
   }
+
   const prevParentScope = CTX.parentScope;
   CTX.parentScope = scope;
   const unmock = mockHooks();
-  const result = setupScope(callback);
-  unmock();
-  CTX.parentScope = prevParentScope;
+
+  let result: T;
+  try {
+    result = setupScope(callback);
+  } finally {
+    unmock();
+    CTX.parentScope = prevParentScope;
+  }
+
   return result;
 }
 
@@ -168,10 +178,7 @@ export function nook<TArgs extends unknown[], TReturn>(
       // Calling it as a nook inside another nook, with the foo``() syntax
       // ---
 
-      return (...args: TArgs) =>
-        withScope(maybeStrings, () => {
-          return def(...args);
-        });
+      return (...args: TArgs) => withScope(maybeStrings, () => def(...args));
     }
 
     // Calling it as a component
