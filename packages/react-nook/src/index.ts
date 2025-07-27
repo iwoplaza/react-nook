@@ -157,9 +157,9 @@ interface Nook<TArgs extends unknown[], TReturn> {
   (...args: TArgs): TReturn;
 }
 
-export const nook = <TArgs extends unknown[], TReturn>(
+export function nook<TArgs extends unknown[], TReturn>(
   def: (...args: TArgs) => TReturn,
-): Nook<TArgs, TReturn> => {
+): Nook<TArgs, TReturn> {
   return ((maybeStrings: unknown) => {
     if (Array.isArray(maybeStrings)) {
       // Calling it as a nook inside another nook, with the foo``() syntax
@@ -178,4 +178,13 @@ export const nook = <TArgs extends unknown[], TReturn>(
     // biome-ignore lint/correctness/useHookAtTopLevel: this is not a normal component
     return useTopLevelScope(() => def(maybeStrings));
   }) as Nook<TArgs, TReturn>;
-};
+}
+
+export function useNook<T>(callback: () => T): T {
+  if (CTX.parentScope) {
+    // We're already inside of a nook, noop
+    return callback();
+  }
+  // biome-ignore lint/correctness/useHookAtTopLevel: the order will not change during rendering, it's stable
+  return useTopLevelScope(callback);
+}
