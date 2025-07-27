@@ -12,7 +12,7 @@ export function callExpressionTrackedState<T>(
     throw new Error('Invalid state');
   }
 
-  let cachedStore = scope.stores.get(callId) as StateStore | undefined;
+  let cachedStore = scope.children.get(callId) as StateStore | undefined;
   if (!cachedStore) {
     const store = {
       type: 'state' as const,
@@ -27,7 +27,7 @@ export function callExpressionTrackedState<T>(
       },
     };
     cachedStore = store;
-    scope.stores.set(callId, store);
+    scope.children.set(callId, store);
   } else {
     // Please don't delete me during this render
     scope.scheduledUnmounts.delete(callId);

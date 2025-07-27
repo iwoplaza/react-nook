@@ -15,18 +15,18 @@ export function callExpressionTrackedEffect(
     throw new Error('Invalid state');
   }
 
-  let store = scope.stores.get(callId) as EffectStore | undefined;
+  let store = scope.children.get(callId) as EffectStore | undefined;
   if (!store) {
     // First time mounting this effect!
     const cleanup = callback();
     store = {
       deps,
       cleanup,
-      destroy() {
+      unmount() {
         this.cleanup?.();
       },
     };
-    scope.stores.set(callId, store);
+    scope.children.set(callId, store);
   } else {
     // Please don't unmount me during this render
     scope.scheduledUnmounts.delete(callId);
@@ -57,16 +57,20 @@ export function callOrderTrackedEffect(
 
   const hookIdx = ++scope.lastHookIndex;
   let store = scope.hookStores[hookIdx] as EffectStore | undefined;
+  const recompute = () => {
+    (store as EffectStore).cleanup?.(); // cleanup old effect
+    (store as EffectStore).cleanup = callback();
+  };
   if (!store) {
-    // First time mounting this effect!
-    const cleanup = callback();
-    store = {
+    const newStore: EffectStore = {
       deps,
-      cleanup,
-      destroy() {
+      cleanup: undefined,
+      unmount() {
         this.cleanup?.();
       },
     };
+    store = newStore;
+    scope.effectsToFlush.push(recompute);
     scope.hookStores[hookIdx] = store;
   }
 
@@ -79,7 +83,6 @@ export function callOrderTrackedEffect(
     store.deps.length !== deps.length ||
     store.deps.some((v, idx) => deps[idx] !== v)
   ) {
-    store.cleanup?.(); // cleanup old effect
-    store.cleanup = callback();
+    scope.effectsToFlush.push(recompute);
   }
 }

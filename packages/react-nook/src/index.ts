@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { CTX } from './ctx.ts';
 import { callExpressionTrackedEffect } from './effect.ts';
 import { mockHooks } from './hook-mock.ts';
@@ -8,29 +8,26 @@ import type { EffectCleanup, Scope } from './types.ts';
 function createScope(): Scope {
   return {
     // Expression-tracking
-    stores: new Map(),
+    children: new Map(),
+    scopes: new Map(),
     // Order-tracking
     lastHookIndex: -1,
     hookStores: [],
+    effectsToFlush: [],
 
     scheduledUnmounts: new Map(),
 
-    destroy() {
-      for (const store of this.stores.values()) {
-        store.destroy?.();
+    unmount() {
+      for (const child of this.children.values()) {
+        child.unmount?.();
       }
+      this.children.clear();
+
       for (const store of this.hookStores) {
-        store.destroy?.();
+        store.unmount?.();
       }
+      this.hookStores = [];
     },
-
-    // flushEffects() {
-
-    // },
-
-    // unmount() {
-
-    // },
   };
 }
 
@@ -42,18 +39,37 @@ function setupScope<T>(cb: () => T): T {
     );
   }
 
-  scope.scheduledUnmounts = new Map(scope.stores.entries());
+  scope.scheduledUnmounts = new Map(scope.children.entries());
   scope.lastHookIndex = -1;
+  scope.effectsToFlush = [];
 
   const result = cb();
 
-  // Deleting all stores that have not checked in
-  for (const [callId, disposable] of scope.scheduledUnmounts.entries()) {
-    disposable.destroy?.();
-    scope.stores.delete(callId);
+  return result;
+}
+
+function flushScheduledEffects(scope: Scope) {
+  for (const effect of scope.effectsToFlush) {
+    effect();
   }
 
-  return result;
+  for (const nested of scope.scopes.values()) {
+    flushScheduledEffects(nested);
+  }
+}
+
+function flushScheduledUnmounts(scope: Scope) {
+  // Deleting all stores that have not checked in
+  for (const [callId, disposable] of scope.scheduledUnmounts.entries()) {
+    disposable.unmount?.();
+    scope.children.delete(callId);
+    scope.scopes.delete(callId); // Might now be a scope, but does not matter
+  }
+
+  // Doing it recursively for nested scopes (those that have not been unmounted)
+  for (const nested of scope.scopes.values()) {
+    flushScheduledUnmounts(nested);
+  }
 }
 
 function useTopLevelScope<T>(cb: () => T): T {
@@ -78,13 +94,23 @@ function useTopLevelScope<T>(cb: () => T): T {
   CTX.parentScope = undefined;
   CTX.rerender = undefined;
 
-  // // biome-ignore lint/correctness/useHookAtTopLevel: this is not a normal component
-  // useEffect(() => {
-  //   return () => {
-  //     // Cleaning up the top-level scope when the component gets unmounted
-  //     scope.destroy();
-  //   };
-  // });
+  // This effect should run after every render
+  // biome-ignore lint/correctness/useHookAtTopLevel: this is not a normal component
+  useEffect(() => {
+    flushScheduledEffects(scope);
+
+    return () => {
+      flushScheduledUnmounts(scope);
+    };
+  });
+
+  // biome-ignore lint/correctness/useHookAtTopLevel: this is not a normal component
+  useEffect(() => {
+    return () => {
+      // Cleaning up the top-level scope when the component gets unmounted
+      scope.unmount();
+    };
+  }, [scope]);
 
   return result;
 }
@@ -95,12 +121,11 @@ function withScope<T>(callId: object, callback: () => T): T {
       'Nooks can only be called within other nooks, or via a `useNook` call',
     );
   }
-  const stores = CTX.parentScope.stores;
-
-  let scope = stores.get(callId) as Scope | undefined;
+  let scope = CTX.parentScope.children.get(callId) as Scope | undefined;
   if (!scope) {
     scope = createScope();
-    stores.set(callId, scope);
+    CTX.parentScope.children.set(callId, scope);
+    CTX.parentScope.scopes.set(callId, scope);
   } else {
     // Please don't delete me during this render
     CTX.parentScope.scheduledUnmounts.delete(callId);

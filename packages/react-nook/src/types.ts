@@ -7,28 +7,31 @@ export type EffectCleanup = () => void;
 export interface StateStore<T = any> {
   value: T;
   setter: Setter<T>;
-  destroy?: undefined;
+  unmount?: undefined;
 }
 
 export interface EffectStore {
   deps: unknown[] | undefined;
   cleanup: EffectCleanup | undefined;
-  destroy(): void;
+  unmount(): void;
 }
 
 export interface CallbackStore<T = unknown> {
   value: T;
   deps: unknown[] | undefined;
-  destroy?: undefined;
+  unmount?: undefined;
 }
 
 export type Store = StateStore | EffectStore | CallbackStore;
 
 export interface Scope {
-  stores: Map</* call id */ object, Scope | Store>;
+  scopes: Map</* call id */ object, Scope>;
+  children: Map</* call id */ object, Scope | Store>;
+
   // Since we allow (some) standard React hooks to be used within nooks, we need order tracking for them
   lastHookIndex: number;
   hookStores: Store[];
+  effectsToFlush: (() => void)[];
 
   /**
    * Reset before every render to be keys of `stores`, then
@@ -39,7 +42,9 @@ export interface Scope {
    */
   scheduledUnmounts: Map</* call id */ object, Scope | Store>;
 
-  destroy(): void;
-  // flushEffects(): void;
-  // unmount(): void;
+  /**
+   * This should call all scheduled unmounts, but not remove the scheduled mounts! That is because
+   * React likes to run effects twice to test for side-effects.
+   */
+  unmount(): void;
 }
