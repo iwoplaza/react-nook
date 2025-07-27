@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { nook } from 'react-nook';
+import { nook, useNook } from 'react-nook';
 import { Btn } from './common';
 
 const WALKING_FRAMES = [
@@ -80,64 +80,64 @@ const LOOKING_FRAMES = [
  > ^ <`,
 ];
 
-const useModuloCounter = (mod: number) => {
+function useModuloCounter(mod: number) {
   const [value, setValue] = useState(0);
 
   const increment = useCallback(
-    () =>
-      setValue((prev) => {
-        return (prev + 1) % mod;
-      }),
+    () => setValue((prev) => (prev + 1) % mod),
     [mod],
   );
 
   return [value, increment] as const;
-};
+}
 
-const useToggle = (initial: boolean) => {
+function useToggle(initial: boolean) {
   const [value, setValue] = useState(initial);
   const toggle = useCallback(() => setValue((prev) => !prev), []);
 
   return [value, toggle] as const;
-};
+}
 
-const $interval = nook((callback: () => unknown, interval: number) => {
+function useInterval(callback: () => unknown, interval: number) {
   // We can use vanilla React hooks inside "nooks", and resort to builtin nooks
   // when we need to call something conditionally
   useEffect(() => {
     const handle = window.setInterval(callback, interval);
     return () => window.clearInterval(handle);
   }, [interval, callback]);
-});
+}
 
-// Nooks are just functions that can use other nooks, so they can also be components!
-const DemoGranularMount = nook(() => {
+const $interval = nook(useInterval);
+
+function DemoGranularMount() {
   // Animation state
   const [walkIdx, incrementWalkIdx] = useModuloCounter(WALKING_FRAMES.length);
   const [lookIdx, incrementLookIdx] = useModuloCounter(LOOKING_FRAMES.length);
-  const [frogActive, toggleFrog] = useToggle(true);
-  const [catActive, toggleCat] = useToggle(true);
+  const [walkActive, toggleWalk] = useToggle(true);
+  const [lookActive, toggleLook] = useToggle(true);
 
-  // Animation behavior
-  if (frogActive) {
-    $interval``(incrementWalkIdx, 200);
-  }
-  if (catActive) {
-    $interval``(incrementLookIdx, 100);
-  }
+  useNook(() => {
+    // Animation behavior
+    if (walkActive) {
+      $interval``(incrementWalkIdx, 100);
+    }
+    if (lookActive) {
+      $interval``(incrementLookIdx, 100);
+    }
+  });
 
   return (
     <div className="grid gap-2 max-w-sm place-items-center mx-auto mt-12 grid-cols-2">
-      <pre className={frogActive ? '' : 'opacity-50'}>
+      <pre className={walkActive ? '' : 'opacity-50'}>
         <code>{WALKING_FRAMES[walkIdx]}</code>
       </pre>
-      <pre className={catActive ? '' : 'opacity-50'}>
+      <pre className={lookActive ? '' : 'opacity-50'}>
         <code>{LOOKING_FRAMES[lookIdx]}</code>
       </pre>
-      <Btn onClick={toggleFrog}>{frogActive ? 'Pause' : 'Play'}</Btn>
-      <Btn onClick={toggleCat}>{catActive ? 'Pause' : 'Play'}</Btn>
+      <Btn onClick={toggleWalk}>{walkActive ? 'Pause' : 'Play'}</Btn>
+      <Btn onClick={toggleLook}>{lookActive ? 'Pause' : 'Play'}</Btn>
     </div>
   );
-});
+}
 
 export default DemoGranularMount;

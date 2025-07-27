@@ -21,7 +21,7 @@ npm install react-nook
 import { nook } from 'react-nook';
 
 // A custom React hook, nothing fancy here
-function useTimer() {
+function useTimer(interval: number) {
   const [value, setValue] = useState(0);
 
   useEffect(() => {
@@ -31,6 +31,8 @@ function useTimer() {
 
     return () => clearInterval(handle);
   }, [interval]);
+  
+  return value;
 };
 
 // Turn any hook into a nook!
