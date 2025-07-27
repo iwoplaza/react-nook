@@ -18,6 +18,11 @@ export default defineConfig({
           label: 'GitHub',
           href: 'https://github.com/iwoplaza/react-nook',
         },
+        {
+          icon: 'x.com',
+          label: 'X/Twitter',
+          href: 'https://x.com/iwoplaza',
+        },
       ],
       sidebar: [
         {
