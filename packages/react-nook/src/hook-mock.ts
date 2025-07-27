@@ -8,7 +8,7 @@ const ReactSecretInternals =
 
 export function mockHooks() {
   const original = ReactSecretInternals.H.useState;
-  console.log(ReactSecretInternals);
+  // console.log(ReactSecretInternals);
 
   // ReactSecretInternals.H.useState = (...args: unknown[]) => {
   //   const [value, setValue] = original(...args);
