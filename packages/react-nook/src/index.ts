@@ -1,8 +1,7 @@
 import { useCallback, useState } from 'react';
-import type { Scope, Setter } from './types';
-
-let parentScope: Scope | undefined;
-let RERENDER: ((...args: never[]) => unknown) | undefined;
+import { CTX } from './ctx.ts';
+import { mockHooks } from './hook-mock.ts';
+import type { Scope, Setter } from './types.ts';
 
 function createScope(): Scope {
   return {
@@ -14,23 +13,25 @@ function createScope(): Scope {
 }
 
 function setupScope<T>(cb: () => T): T {
-  if (!parentScope) {
+  if (!CTX.parentScope) {
     throw new Error(
       'Nooks can only be called within other nooks, or via a `useNook` call',
     );
   }
 
-  parentScope.stateStoresToUnmount = new Set(parentScope.stateStores.keys());
-  parentScope.nestedToUnmount = new Set(parentScope.nested.keys());
+  CTX.parentScope.stateStoresToUnmount = new Set(
+    CTX.parentScope.stateStores.keys(),
+  );
+  CTX.parentScope.nestedToUnmount = new Set(CTX.parentScope.nested.keys());
 
   const result = cb();
 
   // Deleting all stores that have not checked in
-  for (const callId of parentScope.stateStoresToUnmount) {
-    parentScope.stateStores.delete(callId);
+  for (const callId of CTX.parentScope.stateStoresToUnmount) {
+    CTX.parentScope.stateStores.delete(callId);
   }
-  for (const callId of parentScope.nestedToUnmount) {
-    parentScope.nested.delete(callId);
+  for (const callId of CTX.parentScope.nestedToUnmount) {
+    CTX.parentScope.nested.delete(callId);
   }
 
   return result;
@@ -40,68 +41,74 @@ function useTopLevelScope<T>(cb: () => T): T {
   // biome-ignore lint/correctness/useHookAtTopLevel: this is not a normal component
   const [, rerender] = useState(0);
   // biome-ignore lint/correctness/useHookAtTopLevel: this is not a normal component
-  RERENDER = useCallback(() => {
+  CTX.rerender = useCallback(() => {
     rerender((prev) => 1 - prev);
   }, []);
 
   // biome-ignore lint/correctness/useHookAtTopLevel: this is not a normal component
   const [scope] = useState(createScope);
-  parentScope = scope;
+  CTX.parentScope = scope;
 
   const result = setupScope(cb);
 
   // Cleanup
-  parentScope = undefined;
-  RERENDER = undefined;
+  CTX.parentScope = undefined;
+  CTX.rerender = undefined;
 
   return result;
 }
 
 function withScope<T>(callId: object, callback: () => T): T {
-  if (!parentScope) {
+  if (!CTX.parentScope) {
     throw new Error(
       'Nooks can only be called within other nooks, or via a `useNook` call',
     );
   }
-  let scope = parentScope.nested.get(callId);
+  let scope = CTX.parentScope.nested.get(callId);
   if (!scope) {
     scope = createScope();
-    parentScope.nested.set(callId, scope);
+    CTX.parentScope.nested.set(callId, scope);
   } else {
     // Please don't delete me during this render
-    parentScope.nestedToUnmount.delete(callId);
+    CTX.parentScope.nestedToUnmount.delete(callId);
   }
-  const prevParentScope = parentScope;
-  parentScope = scope;
+  const prevParentScope = CTX.parentScope;
+  CTX.parentScope = scope;
+  const unmock = mockHooks();
   const result = setupScope(callback);
-  parentScope = prevParentScope;
+  unmock();
+  CTX.parentScope = prevParentScope;
   return result;
 }
 
 function askState<T>(callId: object, initial: T): readonly [T, Setter<T>] {
-  const rerender = RERENDER;
+  const rerender = CTX.rerender;
 
-  if (!parentScope) {
+  if (!CTX.parentScope) {
     throw new Error('Invalid state');
   }
 
-  let store = parentScope.stateStores.get(callId);
-  if (!store) {
-    const newStore = {
+  let cachedStore = CTX.parentScope.stateStores.get(callId);
+  if (!cachedStore) {
+    const store = {
       value: initial,
-      setter: (newValue: T) => {
-        newStore.value = newValue;
+      setter: (valueOrCompute: T | ((prev: T) => T)) => {
+        if (typeof valueOrCompute === 'function') {
+          store.value = (valueOrCompute as (prev: T) => T)(store.value);
+        } else {
+          store.value = valueOrCompute as T;
+        }
         rerender?.();
       },
     };
-    store = newStore;
-    parentScope.stateStores.set(callId, newStore);
+    cachedStore = store;
+    CTX.parentScope.stateStores.set(callId, store);
   } else {
     // Please don't delete me during this render
-    parentScope.stateStoresToUnmount.delete(callId);
+    CTX.parentScope.stateStoresToUnmount.delete(callId);
   }
 
-  return [store.value, store.setter];
+  return [cachedStore.value, cachedStore.setter];
 }
 
 export const nookState =

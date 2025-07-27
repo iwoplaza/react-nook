@@ -1,4 +1,5 @@
-export type Setter<T> = (value: T) => void;
+export type Setter<T> = ((value: T) => void) &
+  ((compute: (prev: T) => T) => void);
 
 export interface StateStore<T> {
   value: T;
