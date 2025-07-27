@@ -1,3 +1,5 @@
+import { useCallback, useState } from 'react';
+
 export const Btn = (props: {
   onClick: () => unknown;
   className?: string | undefined;
@@ -14,3 +16,13 @@ export const Btn = (props: {
     </button>
   );
 };
+
+export function useCounter() {
+  const [value, setValue] = useState(0);
+
+  const increment = useCallback(() => {
+    setValue((prev) => prev + 1);
+  }, []);
+
+  return [value, increment] as const;
+}

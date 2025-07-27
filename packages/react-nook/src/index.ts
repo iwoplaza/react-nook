@@ -1,46 +1,60 @@
-import { type ReactNode, useCallback, useState } from 'react';
-
-type Setter<T> = (value: T) => void;
-
-interface StateStore<T> {
-  value: T;
-  setter: Setter<T>;
-}
-
-interface Scope {
-  // biome-ignore lint/suspicious/noExplicitAny: contravariance
-  stateStores: Map</* call id */ object, StateStore<any>>;
-  nested: Map</* call id */ object, Scope>;
-}
+import { useCallback, useState } from 'react';
+import type { Scope, Setter } from './types';
 
 let parentScope: Scope | undefined;
-
 let RERENDER: ((...args: never[]) => unknown) | undefined;
 
 function createScope(): Scope {
   return {
     stateStores: new Map(),
     nested: new Map(),
+    stateStoresToUnmount: new Set(),
+    nestedToUnmount: new Set(),
   };
 }
 
-function useTopLevelScope() {
-  // Required to force re-renders 🫠
+function setupScope<T>(cb: () => T): T {
+  if (!parentScope) {
+    throw new Error(
+      'Nooks can only be called within other nooks, or via a `useNook` call',
+    );
+  }
+
+  parentScope.stateStoresToUnmount = new Set(parentScope.stateStores.keys());
+  parentScope.nestedToUnmount = new Set(parentScope.nested.keys());
+
+  const result = cb();
+
+  // Deleting all stores that have not checked in
+  for (const callId of parentScope.stateStoresToUnmount) {
+    parentScope.stateStores.delete(callId);
+  }
+  for (const callId of parentScope.nestedToUnmount) {
+    parentScope.nested.delete(callId);
+  }
+
+  return result;
+}
+
+function useTopLevelScope<T>(cb: () => T): T {
   // biome-ignore lint/correctness/useHookAtTopLevel: this is not a normal component
   const [, rerender] = useState(0);
   // biome-ignore lint/correctness/useHookAtTopLevel: this is not a normal component
   RERENDER = useCallback(() => {
     rerender((prev) => 1 - prev);
   }, []);
+
   // biome-ignore lint/correctness/useHookAtTopLevel: this is not a normal component
   const [scope] = useState(createScope);
   parentScope = scope;
 
-  return () => {
-    // Cleanup
-    parentScope = undefined;
-    RERENDER = undefined;
-  };
+  const result = setupScope(cb);
+
+  // Cleanup
+  parentScope = undefined;
+  RERENDER = undefined;
+
+  return result;
 }
 
 function withScope<T>(callId: object, callback: () => T): T {
@@ -51,15 +65,15 @@ function withScope<T>(callId: object, callback: () => T): T {
   }
   let scope = parentScope.nested.get(callId);
   if (!scope) {
-    scope = {
-      stateStores: new Map(),
-      nested: new Map(),
-    } satisfies Scope;
+    scope = createScope();
     parentScope.nested.set(callId, scope);
+  } else {
+    // Please don't delete me during this render
+    parentScope.nestedToUnmount.delete(callId);
   }
   const prevParentScope = parentScope;
   parentScope = scope;
-  const result = callback();
+  const result = setupScope(callback);
   parentScope = prevParentScope;
   return result;
 }
@@ -82,50 +96,18 @@ function askState<T>(callId: object, initial: T): readonly [T, Setter<T>] {
     };
     store = newStore;
     parentScope.stateStores.set(callId, newStore);
+  } else {
+    // Please don't delete me during this render
+    parentScope.stateStoresToUnmount.delete(callId);
   }
 
   return [store.value, store.setter];
 }
 
-// const huuk = {
-//   wrap: () => {},
-//   use: useTopLevelScope,
-//   state(strings: TemplateStringsArray) {
-//     function temp<T>(initial: T) {
-//       return askState(strings, initial);
-//     }
-//     return temp;
-//   },
-// };
-
-interface NookContext {
-  state: (
-    strings: TemplateStringsArray,
-  ) => <T>(initial: T) => readonly [T, Setter<T>];
-}
-
-export const stateNook =
+export const nookState =
   (strings: TemplateStringsArray) =>
   <T>(initial: T) =>
     askState(strings, initial);
-
-export const $state = stateNook;
-export const nookState = stateNook;
-
-const huukInstance: NookContext = {
-  state: stateNook,
-};
-
-export const nookComponent = <TProps extends Record<string, unknown>>(
-  Component: (ctx: NookContext, props: TProps) => ReactNode,
-) => {
-  return (props: TProps) => {
-    const dehuuk = useTopLevelScope();
-    const result = Component(huukInstance, props);
-    dehuuk();
-    return result;
-  };
-};
 
 interface Nook<TArgs extends unknown[], TReturn> {
   (strings: TemplateStringsArray): (...args: TArgs) => TReturn;
@@ -137,7 +119,7 @@ export const nook = <TArgs extends unknown[], TReturn>(
 ): Nook<TArgs, TReturn> => {
   return ((maybeStrings: unknown) => {
     if (Array.isArray(maybeStrings)) {
-      // Calling it as a nook inside a component or nook
+      // Calling it as a nook inside another nook, with the foo``() syntax
       // ---
 
       return (...args: TArgs) =>
@@ -149,10 +131,8 @@ export const nook = <TArgs extends unknown[], TReturn>(
     // Calling it as a component
     // ---
 
+    // @ts-ignore: let's assume that if not called using the foo``() syntax, it's being called as a component
     // biome-ignore lint/correctness/useHookAtTopLevel: this is not a normal component
-    const detach = useTopLevelScope();
-    const result = def(...([maybeStrings] as TArgs));
-    detach();
-    return result;
+    return useTopLevelScope(() => def(maybeStrings));
   }) as Nook<TArgs, TReturn>;
 };

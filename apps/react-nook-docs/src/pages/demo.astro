@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import DemoSwappableStore from '../components/demo-swappable-store';
+import { DemoHookInANook } from '../components/demo-hook-in-a-nook';
 ---
 
 <html data-theme="light">
@@ -12,7 +13,9 @@ import DemoSwappableStore from '../components/demo-swappable-store';
     <link rel="sitemap" href="/react-nook/sitemap-index.xml" />
   </head>
   <body>
-    <h2 class="text-center text-2xl my-2">Swappable store</h2>
+    <h2 class="text-center text-2xl mt-20 mb-2">Swappable store</h2>
     <DemoSwappableStore client:only="react" />
+    <h2 class="text-center text-2xl mt-20 mb-2">Hook in a nook</h2>
+    <DemoHookInANook client:only="react" />
   </body>
 </html>
