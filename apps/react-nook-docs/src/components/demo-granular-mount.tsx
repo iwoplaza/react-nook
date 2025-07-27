@@ -60,7 +60,7 @@ const CAT_FRAMES = [
  > ^ <`,
 ];
 
-const $modCounter = nook((mod: number) => {
+const useModuloCounter = (mod: number) => {
   const [value, setValue] = useState(0);
 
   const increment = useCallback(
@@ -72,14 +72,14 @@ const $modCounter = nook((mod: number) => {
   );
 
   return [value, increment] as const;
-});
+};
 
-const $toggle = nook((initial: boolean) => {
+const useToggle = (initial: boolean) => {
   const [value, setValue] = useState(initial);
   const toggle = useCallback(() => setValue((prev) => !prev), []);
 
   return [value, toggle] as const;
-});
+};
 
 const $interval = nook((callback: () => unknown, interval: number) => {
   // We can use vanilla React hooks inside "nooks", and resort to builtin nooks
@@ -93,10 +93,10 @@ const $interval = nook((callback: () => unknown, interval: number) => {
 // Nooks are just functions that can use other nooks, so they can also be components!
 const DemoGranularMount = nook(() => {
   // Animation state
-  const [frogIdx, incrementFrogIdx] = $modCounter``(FROG_FRAMES.length);
-  const [catIdx, incrementCatIdx] = $modCounter``(CAT_FRAMES.length);
-  const [frogActive, toggleFrog] = $toggle``(true);
-  const [catActive, toggleCat] = $toggle``(true);
+  const [frogIdx, incrementFrogIdx] = useModuloCounter(FROG_FRAMES.length);
+  const [catIdx, incrementCatIdx] = useModuloCounter(CAT_FRAMES.length);
+  const [frogActive, toggleFrog] = useToggle(true);
+  const [catActive, toggleCat] = useToggle(true);
 
   // Animation behavior
   if (frogActive) {
