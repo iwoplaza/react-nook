@@ -1,4 +1,8 @@
 import React from 'react';
+import { CTX } from './ctx.ts';
+import { callOrderTrackedEffect } from './effect.ts';
+import { callOrderTrackedState } from './state.ts';
+import type { EffectCleanup } from './types.ts';
 
 const ReactSecretInternals =
   //@ts-ignore
@@ -7,16 +11,28 @@ const ReactSecretInternals =
   React.__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED;
 
 export function mockHooks() {
-  const original = ReactSecretInternals.H.useState;
-  // console.log(ReactSecretInternals);
+  const scope = CTX.parentScope;
+  if (!scope || !ReactSecretInternals || !ReactSecretInternals.H) {
+    // Let's just not mock anything
+    return () => {};
+  }
 
-  // ReactSecretInternals.H.useState = (...args: unknown[]) => {
-  //   const [value, setValue] = original(...args);
+  const origUseState = ReactSecretInternals.H.useState;
+  const origUseEffect = ReactSecretInternals.H.useEffect;
 
-  //   return [Math.random(), setValue];
-  // };
+  ReactSecretInternals.H.useState = (valueOrCompute: unknown) => {
+    return callOrderTrackedState(valueOrCompute);
+  };
+
+  ReactSecretInternals.H.useEffect = (
+    cb: () => EffectCleanup,
+    deps?: unknown[] | undefined,
+  ) => {
+    callOrderTrackedEffect(cb, deps);
+  };
 
   return () => {
-    ReactSecretInternals.H.useState = original;
+    ReactSecretInternals.H.useState = origUseState;
+    ReactSecretInternals.H.useEffect = origUseEffect;
   };
 }

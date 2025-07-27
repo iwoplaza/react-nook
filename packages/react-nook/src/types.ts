@@ -3,44 +3,43 @@ export type Setter<T> = ((value: T) => void) &
 
 export type EffectCleanup = () => void;
 
-export interface StateStore<T> {
+// biome-ignore lint/suspicious/noExplicitAny: contravariance
+export interface StateStore<T = any> {
   value: T;
   setter: Setter<T>;
+  destroy?: undefined;
 }
 
 export interface EffectStore {
   deps: unknown[] | undefined;
   cleanup: EffectCleanup | undefined;
+  destroy(): void;
 }
 
+export interface CallbackStore<T = unknown> {
+  value: T;
+  deps: unknown[] | undefined;
+  destroy?: undefined;
+}
+
+export type Store = StateStore | EffectStore | CallbackStore;
+
 export interface Scope {
-  nested: Map</* call id */ object, Scope>;
-  // biome-ignore lint/suspicious/noExplicitAny: contravariance
-  stateStores: Map</* call id */ object, StateStore<any>>;
-  effectStores: Map</* call id */ object, EffectStore>;
+  stores: Map</* call id */ object, Scope | Store>;
+  // Since we allow (some) standard React hooks to be used within nooks, we need order tracking for them
+  lastHookIndex: number;
+  hookStores: Store[];
 
   /**
-   * Reset before every render to be keys of `nested`, then
+   * Reset before every render to be keys of `stores`, then
    * each custom nook call takes itself out of this set.
    *
    * At the end of the scope, those that have not reported are
    * unmounted (cleaned-up).
    */
-  nestedToUnmount: Set</* call id */ object>;
-  /**
-   * Reset before every render to be keys of `stateStores`, then
-   * each nookState takes itself out of this set.
-   *
-   * At the end of the scope, those that have not reported are
-   * unmounted (cleaned-up).
-   */
-  stateStoresToUnmount: Set</* call id */ object>;
-  /**
-   * Reset before every render to be keys of `effectStores`, then
-   * each nookEffect takes itself out of this set.
-   *
-   * At the end of the scope, those that have not reported are
-   * unmounted (cleaned-up).
-   */
-  effectStoresToUnmount: Set</* call id */ object>;
+  scheduledUnmounts: Map</* call id */ object, Scope | Store>;
+
+  destroy(): void;
+  // flushEffects(): void;
+  // unmount(): void;
 }
