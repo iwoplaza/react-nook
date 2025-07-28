@@ -5,6 +5,8 @@ import { callOrderTrackedEffect } from './effect.ts';
 import { callOrderTrackedState } from './state.ts';
 import type { AnyFn, EffectCleanup } from './types.ts';
 
+const NOOP = () => {};
+
 const ReactSecretInternals =
   //@ts-ignore
   React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE ??
@@ -14,6 +16,12 @@ const ReactSecretInternals =
 let WARNED = false;
 
 export function mockHooks() {
+  if (typeof window === 'undefined') {
+    // We're on the server, there's going to be no rerenders, so no problem with
+    // conditions in the render function. Skip mocking
+    return NOOP;
+  }
+
   const scope = CTX.parentScope;
   if (!scope || !ReactSecretInternals || !ReactSecretInternals.H) {
     // Let's just not mock anything
@@ -24,7 +32,7 @@ export function mockHooks() {
       console.dir(ReactSecretInternals);
       WARNED = true;
     }
-    return () => {};
+    return NOOP;
   }
 
   const originals = Object.entries(ReactSecretInternals.H);

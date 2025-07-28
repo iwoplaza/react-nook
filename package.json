@@ -2,7 +2,7 @@
   "name": "react-nook-monorepo",
   "private": true,
   "scripts": {
-    "dev": "pnpm -r dev",
+    "dev": "pnpm -r --filter react-nook-docs dev",
     "test:unit:watch": "vitest"
   },
   "keywords": [

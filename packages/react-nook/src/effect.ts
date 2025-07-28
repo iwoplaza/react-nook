@@ -1,4 +1,5 @@
 import { CTX } from './ctx.ts';
+import { DEBUG } from './debug.ts';
 import type { EffectCleanup, EffectStore } from './types.ts';
 
 export function destroyEffectStore(store: EffectStore) {
@@ -10,6 +11,11 @@ export function callExpressionTrackedEffect(
   callback: () => EffectCleanup,
   deps: unknown[] | undefined,
 ): void {
+  if (typeof window === 'undefined') {
+    // We're on the server, no need to do anything
+    return;
+  }
+
   const scope = CTX.parentScope;
   if (!scope) {
     throw new Error('Invalid state');
@@ -50,6 +56,11 @@ export function callOrderTrackedEffect(
   callback: () => EffectCleanup,
   deps: unknown[] | undefined,
 ) {
+  if (typeof window === 'undefined') {
+    // We're on the server, no need to do anything
+    return;
+  }
+
   const scope = CTX.parentScope;
   if (!scope) {
     throw new Error('Invalid state');
@@ -70,6 +81,7 @@ export function callOrderTrackedEffect(
       },
     };
     store = newStore;
+    DEBUG(`Pushing effect to flush`, callback);
     scope.effectsToFlush.push(recompute);
     scope.hookStores[hookIdx] = store;
   }

@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { callExpressionTrackedCallback } from './callback.ts';
 import { CTX } from './ctx.ts';
+import { DEBUG } from './debug.ts';
 import { callExpressionTrackedEffect } from './effect.ts';
 import { mockHooks } from './hook-mock.ts';
 import { callExpressionTrackedState } from './state.ts';
 import type { AnyFn, EffectCleanup, Scope } from './types.ts';
 
-function createScope(): Scope {
+function createScope(depth: number = 0): Scope {
+  DEBUG(`Creating scope of depth ${depth}`);
   return {
+    depth,
     // Expression-tracking
     children: new Map(),
     scopes: new Map(),
@@ -40,9 +43,9 @@ function setupScope<T>(cb: () => T): T {
     );
   }
 
+  DEBUG(`Setting up scope of depth ${scope.depth}`);
   scope.scheduledUnmounts = new Map(scope.children.entries());
   scope.lastHookIndex = -1;
-  scope.effectsToFlush = [];
 
   const result = cb();
 
@@ -50,9 +53,11 @@ function setupScope<T>(cb: () => T): T {
 }
 
 function flushScheduledEffects(scope: Scope) {
+  DEBUG('Flushing effects', scope.effectsToFlush.length);
   for (const effect of scope.effectsToFlush) {
     effect();
   }
+  scope.effectsToFlush = [];
 
   for (const nested of scope.scopes.values()) {
     flushScheduledEffects(nested);
@@ -74,6 +79,7 @@ function flushScheduledUnmounts(scope: Scope) {
 }
 
 function useTopLevelScope<T>(cb: () => T): T {
+  DEBUG('useTopLevelScope()');
   // biome-ignore lint/correctness/useHookAtTopLevel: this is not a normal component
   const [, rerender] = useState(0);
   // biome-ignore lint/correctness/useHookAtTopLevel: this is not a normal component
@@ -84,6 +90,8 @@ function useTopLevelScope<T>(cb: () => T): T {
     CTX.rerenderRequested = true;
   }, []);
 
+  // This useState calls `createScope` two times before continuing the render the first
+  // time the component is mounted in strict mode.
   // biome-ignore lint/correctness/useHookAtTopLevel: this is not a normal component
   const [scope] = useState(createScope);
   CTX.parentScope = scope;
@@ -127,7 +135,7 @@ function withScope<T>(callId: object, callback: () => T): T {
   }
   let scope = CTX.parentScope.children.get(callId) as Scope | undefined;
   if (!scope) {
-    scope = createScope();
+    scope = createScope(CTX.parentScope.depth + 1);
     CTX.parentScope.children.set(callId, scope);
     CTX.parentScope.scopes.set(callId, scope);
   } else {
