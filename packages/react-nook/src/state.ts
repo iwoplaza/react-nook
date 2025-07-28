@@ -5,6 +5,11 @@ export function callExpressionTrackedState<T>(
   callId: object,
   initial: T,
 ): readonly [T, Setter<T>] {
+  if (typeof window === 'undefined') {
+    // We're on the server, just return the initial value and a noop
+    return [initial, () => {}];
+  }
+
   const rerender = CTX.rerender;
   const scope = CTX.parentScope;
 

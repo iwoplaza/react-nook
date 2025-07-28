@@ -27,6 +27,10 @@ export interface CallbackStore<T = unknown> {
 export type Store = StateStore | EffectStore | CallbackStore;
 
 export interface Scope {
+  /**
+   * How nested this scope is. Used only for debugging.
+   */
+  depth: number;
   scopes: Map</* call id */ object, Scope>;
   children: Map</* call id */ object, Scope | Store>;
 
