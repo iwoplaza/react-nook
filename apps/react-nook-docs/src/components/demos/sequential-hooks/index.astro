@@ -1,0 +1,21 @@
+---
+import SequentialHooksDemo from './sequential-hooks';
+import code from './sequential-hooks?raw';
+import code__hooks from './hooks?raw';
+
+import { Code } from '@astrojs/starlight/components';
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+import { applyCuts } from '../../../lib/apply-cuts';
+---
+
+<article class="grid lg:grid-cols-2 min-h-[38rem]">
+  <Tabs>
+    <TabItem label="main.tsx">
+      <Code code={applyCuts(code)} lang="tsx" />
+    </TabItem>
+    <TabItem label="hooks.ts">
+      <Code code={applyCuts(code__hooks)} lang="tsx" />
+    </TabItem>
+  </Tabs>
+  <SequentialHooksDemo client:only="react" />
+</article>
