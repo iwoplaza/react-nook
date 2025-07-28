@@ -103,14 +103,8 @@ of tagged template literals, and is described in more details here.](#how-does-i
 
 <NNooks /> are places in your codebase where "Rules of Hooks" can finally lay back and relax...
 
-{/* Let's go over the relationship between 🪝 hooks and 📦 nooks
-- 🪝 hooks **CANNOT** use other 🪝 hooks conditionally
-- 🪝 hooks can use 📦 nooks conditionally: `useNook(...)`
-- 📦 nooks can use other 📦 nooks conditionally: `$foo``(...)`
-- 📦 nooks can use 🪝 nooks conditionally: `nook(useFoo)` */}
-
 Let's go over the relationship between <Hooks /> and <Nooks />
-- <Hooks /> **CANNOT** use other <Hooks /> conditionally
+- <Hooks /> **CANNOT** use other <Hooks /> conditionally (the whole reason we're here)
 - <Hooks /> can use <Nooks /> conditionally: `useNook(...)`
 - <Nooks /> can use other <Nooks /> conditionally: `$foo``(...)`
 - <Nooks /> can use <Hooks /> conditionally: `nook(useFoo)`
