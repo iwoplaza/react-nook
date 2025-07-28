@@ -1,12 +1,12 @@
 {
   "name": "react-nook",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "An alternate reality where React hooks can be called conditionally.",
   "type": "module",
   "scripts": {
     "build": "tsdown",
     "test:types": "tsc --noEmit",
-    "prepublishOnly": "automd"
+    "prepublishOnly": "automd && pnpm build"
   },
   "main": "./src/index.ts",
   "types": "./src/index.ts",
