@@ -40,8 +40,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --recursive --frozen-lockfile
 
-      - name: Build all
-        run: pnpm -r build
+      - name: Build the docs
+        run: pnpm -r --filter react-nook-docs build
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
