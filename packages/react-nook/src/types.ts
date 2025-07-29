@@ -15,6 +15,8 @@ export interface StateStore<T = any> {
 export interface EffectStore {
   deps: unknown[] | undefined;
   cleanup: EffectCleanup | undefined;
+  scheduled: boolean;
+  callback?: () => EffectCleanup; // Store original callback for re-running
   unmount(): void;
 }
 

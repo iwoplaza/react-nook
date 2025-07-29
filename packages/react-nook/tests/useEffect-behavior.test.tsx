@@ -324,9 +324,6 @@ describe('useEffect behavior tracking with snapshots', () => {
           "nook-basic:mount",
           "nook-basic:cleanup",
           "nook-basic:mount",
-          "nook-basic:cleanup",
-          "nook-basic:mount",
-          "nook-basic:cleanup",
         ]
       `);
 
@@ -341,14 +338,6 @@ describe('useEffect behavior tracking with snapshots', () => {
       expect(effectEvents).toMatchInlineSnapshot(`
         [
           "nook-basic:mount",
-          "nook-basic:cleanup",
-          "nook-basic:mount",
-          "nook-basic:cleanup",
-          "nook-basic:mount",
-          "nook-conditional:mount",
-          "nook-conditional:cleanup",
-          "nook-conditional:mount",
-          "nook-conditional:cleanup",
           "nook-conditional:mount",
         ]
       `);
@@ -366,8 +355,6 @@ describe('useEffect behavior tracking with snapshots', () => {
       expect(effectEvents).toMatchInlineSnapshot(`
         [
           "nook-basic:mount",
-          "nook-basic:cleanup",
-          "nook-basic:mount",
         ]
       `);
 
@@ -379,8 +366,7 @@ describe('useEffect behavior tracking with snapshots', () => {
         [
           "nook-basic:cleanup",
           "nook-basic:mount",
-          "nook-conditional:mount",
-          "nook-conditional:cleanup",
+          "nook-basic:mount",
           "nook-conditional:mount",
         ]
       `);

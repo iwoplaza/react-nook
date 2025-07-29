@@ -22,34 +22,55 @@ export function callExpressionTrackedEffect(
   }
 
   let store = scope.children.get(callId) as EffectStore | undefined;
+  const recompute = () => {
+    (store as EffectStore).cleanup?.(); // cleanup old effect
+    (store as EffectStore).cleanup = callback();
+  };
+  
   if (!store) {
     // First time mounting this effect!
-    const cleanup = callback();
-    store = {
+    const newStore: EffectStore = {
       deps,
-      cleanup,
+      cleanup: undefined,
+      scheduled: false,
+      callback,
       unmount() {
         this.cleanup?.();
       },
     };
+    store = newStore;
+    DEBUG(`Scheduling effect to flush`, callback);
+    scope.effectsToFlush.push(recompute);
     scope.children.set(callId, store);
   } else {
     // Please don't unmount me during this render
     scope.scheduledUnmounts.delete(callId);
   }
 
-  // Comparing with the previous render
-  if (
-    // Not tracking deps?
-    !store.deps ||
-    !deps ||
-    // Deps changed?
-    store.deps.length !== deps.length ||
-    store.deps.some((v, idx) => deps[idx] !== v)
-  ) {
-    store.cleanup?.(); // cleanup old effect
-    store.cleanup = callback();
+  // Always schedule the effect if it doesn't have a cleanup function
+  // This handles the case where the effect was cleaned up and needs to re-run
+  const shouldSchedule = 
+    // Not already scheduled
+    !store.scheduled &&
+    (
+      !store.cleanup || 
+      !store.deps ||
+      !deps ||
+      store.deps.length !== deps.length ||
+      store.deps.some((v, idx) => deps[idx] !== v)
+    );
+    
+  if (shouldSchedule) {
+    DEBUG(`Scheduling effect to flush (shouldSchedule: ${shouldSchedule}, hasCleanup: ${!!store.cleanup})`);
+    store.scheduled = true;
+    scope.effectsToFlush.push(() => {
+      recompute();
+      store.scheduled = false; // Reset after running
+    });
   }
+  
+  // Update deps for next comparison
+  store.deps = deps;
 }
 
 export function callOrderTrackedEffect(
@@ -76,25 +97,40 @@ export function callOrderTrackedEffect(
     const newStore: EffectStore = {
       deps,
       cleanup: undefined,
+      scheduled: false,
+      callback,
       unmount() {
         this.cleanup?.();
       },
     };
     store = newStore;
-    DEBUG(`Pushing effect to flush`, callback);
-    scope.effectsToFlush.push(recompute);
     scope.hookStores[hookIdx] = store;
   }
 
   // Comparing with the previous render
-  if (
-    // Not tracking deps?
-    !store.deps ||
-    !deps ||
-    // Deps changed?
-    store.deps.length !== deps.length ||
-    store.deps.some((v, idx) => deps[idx] !== v)
-  ) {
-    scope.effectsToFlush.push(recompute);
+  const shouldSchedule = 
+    // Not already scheduled
+    !store.scheduled &&
+    (
+      // First time (no deps set yet)
+      store.deps === undefined ||
+      // Not tracking deps
+      !deps ||
+      // Deps changed
+      (store.deps && (store.deps.length !== deps.length || store.deps.some((v, idx) => deps[idx] !== v))) ||
+      // Effect was cleaned up (no cleanup function)
+      !store.cleanup
+    );
+    
+  if (shouldSchedule) {
+    DEBUG(`Scheduling order-tracked effect (shouldSchedule: ${shouldSchedule}, hasCleanup: ${!!store.cleanup}, firstTime: ${store.deps === undefined})`);
+    store.scheduled = true;
+    scope.effectsToFlush.push(() => {
+      recompute();
+      store.scheduled = false; // Reset after running
+    });
   }
+  
+  // Update deps for next comparison
+  store.deps = deps;
 }
