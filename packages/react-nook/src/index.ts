@@ -110,9 +110,49 @@ function useTopLevelScope<T>(cb: () => T): T {
   // biome-ignore lint/correctness/useHookAtTopLevel: this is not a normal component
   useEffect(() => {
     flushScheduledEffects(scope);
+    flushScheduledUnmounts(scope);
 
     return () => {
-      flushScheduledUnmounts(scope);
+      // In Strict Mode, React will run this cleanup to simulate unmounting
+      DEBUG('useEffect cleanup running - simulating Strict Mode unmount');
+      
+      // Helper function to cleanup effects recursively
+      const cleanupEffectsInScope = (currentScope: Scope) => {
+        // Re-schedule effects in hookStores (order-tracked effects)
+        for (const store of currentScope.hookStores) {
+          if ('cleanup' in store && 'scheduled' in store && 'callback' in store && store.cleanup && store.callback) {
+            DEBUG('Re-scheduling order-tracked effect for Strict Mode re-run');
+            // Don't call cleanup here - React already did it
+            store.scheduled = false; // Allow re-scheduling
+            // Re-schedule the effect to run again (Strict Mode re-run)
+            const originalCallback = store.callback;
+            currentScope.effectsToFlush.push(() => {
+              store.cleanup = originalCallback();
+            });
+          }
+        }
+        
+        // Re-schedule effects in children (expression-tracked effects)
+        for (const child of currentScope.children.values()) {
+          if ('cleanup' in child && 'scheduled' in child && 'callback' in child && child.cleanup && child.callback) {
+            DEBUG('Re-scheduling expression-tracked effect for Strict Mode re-run');
+            // Don't call cleanup here - React already did it
+            child.scheduled = false; // Allow re-scheduling
+            // Re-schedule the effect to run again (Strict Mode re-run)
+            const originalCallback = child.callback;
+            currentScope.effectsToFlush.push(() => {
+              child.cleanup = originalCallback();
+            });
+          }
+        }
+        
+        // Recursively cleanup nested scopes
+        for (const nestedScope of currentScope.scopes.values()) {
+          cleanupEffectsInScope(nestedScope);
+        }
+      };
+      
+      cleanupEffectsInScope(scope);
     };
   });
 

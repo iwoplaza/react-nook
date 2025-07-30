@@ -5,9 +5,10 @@ export default defineConfig({
   plugins: [react()],
   test: {
     browser: {
-      enabled: true,
+      enabled: false,
       provider: 'playwright',
       instances: [{ browser: 'chromium' }],
     },
+    environment: 'jsdom',
   },
 });
