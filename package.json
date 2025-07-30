@@ -3,7 +3,8 @@
   "private": true,
   "scripts": {
     "dev": "pnpm -r --filter react-nook-docs dev",
-    "test:unit:watch": "vitest"
+    "test:unit:watch": "vitest",
+    "test:unit": "vitest run"
   },
   "keywords": [
     "react",
