@@ -44,16 +44,15 @@ import { nook, useNook } from '../src/index.ts';
  */
 
 describe('useEffect behavior tracking with snapshots', () => {
-  let effectEvents: string[] = [];
-  let renderCount = 0;
+  let events: string[] = [];
 
   // Helper to create trackable effects
   function createTrackableEffect(name: string) {
     return (deps?: unknown[]) => {
       useEffect(() => {
-        effectEvents.push(`${name}:mount`);
+        events.push(`${name}:mount`);
         return () => {
-          effectEvents.push(`${name}:cleanup`);
+          events.push(`${name}:cleanup`);
         };
         // biome-ignore lint/correctness/useExhaustiveDependencies: it's a special helper, shh
       }, deps);
@@ -64,9 +63,9 @@ describe('useEffect behavior tracking with snapshots', () => {
   function createTrackableNookEffect(name: string) {
     return nook((deps?: unknown[]) => {
       useEffect(() => {
-        effectEvents.push(`nook-${name}:mount`);
+        events.push(`nook-${name}:mount`);
         return () => {
-          effectEvents.push(`nook-${name}:cleanup`);
+          events.push(`nook-${name}:cleanup`);
         };
         // biome-ignore lint/correctness/useExhaustiveDependencies: it's a special helper, shh
       }, deps);
@@ -74,17 +73,16 @@ describe('useEffect behavior tracking with snapshots', () => {
   }
 
   beforeEach(() => {
-    effectEvents = [];
-    renderCount = 0;
+    events = [];
   });
 
   describe('Standard React useEffect behavior', () => {
     const useBasicEffect = createTrackableEffect('basic');
 
     function BasicEffectComponent() {
-      renderCount++;
+      events.push('render');
       useBasicEffect();
-      return <div>Basic Effect Component (render #{renderCount})</div>;
+      return <div>Basic Effect Component</div>;
     }
 
     it('should track initial mount behavior in Strict Mode', () => {
@@ -105,19 +103,21 @@ describe('useEffect behavior tracking with snapshots', () => {
       );
 
       // In Strict Mode, we expect the mount-unmount-mount pattern
-      expect(effectEvents).toMatchInlineSnapshot(`
+      expect(events).toMatchInlineSnapshot(`
         [
+          "render",
+          "render",
           "basic:mount",
           "basic:cleanup",
           "basic:mount",
         ]
       `);
 
-      effectEvents = [];
+      events = [];
       result.unmount();
 
       // Final cleanup when component actually unmounts
-      expect(effectEvents).toMatchInlineSnapshot(`
+      expect(events).toMatchInlineSnapshot(`
         [
           "basic:cleanup",
         ]
@@ -136,17 +136,18 @@ describe('useEffect behavior tracking with snapshots', () => {
       const result = render(<BasicEffectComponent />);
 
       // Without Strict Mode, only single mount
-      expect(effectEvents).toMatchInlineSnapshot(`
+      expect(events).toMatchInlineSnapshot(`
         [
+          "render",
           "basic:mount",
         ]
       `);
 
-      effectEvents = [];
+      events = [];
       result.unmount();
 
       // Cleanup on actual unmount
-      expect(effectEvents).toMatchInlineSnapshot(`
+      expect(events).toMatchInlineSnapshot(`
         [
           "basic:cleanup",
         ]
@@ -158,13 +159,9 @@ describe('useEffect behavior tracking with snapshots', () => {
     const useDependentEffect = createTrackableEffect('dependent');
 
     function DependentEffectComponent({ value }: { value: number }) {
-      renderCount++;
+      events.push('render');
       useDependentEffect([value]);
-      return (
-        <div>
-          Dependent Effect Component: {value} (render #{renderCount})
-        </div>
-      );
+      return <div>Dependent Effect Component: {value}</div>;
     }
 
     it('should track dependency change behavior in Strict Mode', () => {
@@ -181,15 +178,17 @@ describe('useEffect behavior tracking with snapshots', () => {
       );
 
       // Initial Strict Mode pattern
-      expect(effectEvents).toMatchInlineSnapshot(`
+      expect(events).toMatchInlineSnapshot(`
         [
+          "render",
+          "render",
           "dependent:mount",
           "dependent:cleanup",
           "dependent:mount",
         ]
       `);
 
-      effectEvents = [];
+      events = [];
       result.rerender(
         <StrictMode>
           <DependentEffectComponent value={2} />
@@ -197,8 +196,10 @@ describe('useEffect behavior tracking with snapshots', () => {
       );
 
       // Dependency change triggers single cleanup and remount
-      expect(effectEvents).toMatchInlineSnapshot(`
+      expect(events).toMatchInlineSnapshot(`
         [
+          "render",
+          "render",
           "dependent:cleanup",
           "dependent:mount",
         ]
@@ -214,18 +215,20 @@ describe('useEffect behavior tracking with snapshots', () => {
       const result = render(<DependentEffectComponent value={1} />);
 
       // Single mount without Strict Mode
-      expect(effectEvents).toMatchInlineSnapshot(`
+      expect(events).toMatchInlineSnapshot(`
         [
+          "render",
           "dependent:mount",
         ]
       `);
 
-      effectEvents = [];
+      events = [];
       result.rerender(<DependentEffectComponent value={2} />);
 
       // Single cleanup and remount on dependency change
-      expect(effectEvents).toMatchInlineSnapshot(`
+      expect(events).toMatchInlineSnapshot(`
         [
+          "render",
           "dependent:cleanup",
           "dependent:mount",
         ]
@@ -238,22 +241,22 @@ describe('useEffect behavior tracking with snapshots', () => {
     const useThirdEffect = createTrackableEffect('third');
 
     function MultiEffectComponent({ showSecond }: { showSecond: boolean }) {
-      renderCount++;
+      events.push('render');
       useFirstEffect();
 
       // Always call the hook, but conditionally execute the effect
       useEffect(() => {
         if (showSecond) {
-          effectEvents.push('second:mount');
+          events.push('second:mount');
           return () => {
-            effectEvents.push('second:cleanup');
+            events.push('second:cleanup');
           };
         }
       }, [showSecond]);
 
       useThirdEffect([showSecond]);
-      
-      return <div>Multi Effect Component (render #{renderCount})</div>;
+
+      return <div>Multi Effect Component</div>;
     }
 
     it('should track multiple effects in Strict Mode', () => {
@@ -271,8 +274,10 @@ describe('useEffect behavior tracking with snapshots', () => {
 
       // All effects get Strict Mode treatment
       // (all effects mount, then all effects unmount, then all effects mount again)
-      expect(effectEvents).toMatchInlineSnapshot(`
+      expect(events).toMatchInlineSnapshot(`
         [
+          "render",
+          "render",
           "first:mount",
           "third:mount",
           "first:cleanup",
@@ -282,7 +287,7 @@ describe('useEffect behavior tracking with snapshots', () => {
         ]
       `);
 
-      effectEvents = [];
+      events = [];
       result.rerender(
         <StrictMode>
           <MultiEffectComponent showSecond={true} />
@@ -291,8 +296,10 @@ describe('useEffect behavior tracking with snapshots', () => {
 
       // New conditional effect and dependency change both get Strict Mode treatment
       // (first cleanup all effects, then mount all effects)
-      expect(effectEvents).toMatchInlineSnapshot(`
+      expect(events).toMatchInlineSnapshot(`
         [
+          "render",
+          "render",
           "first:cleanup",
           "third:cleanup",
           "first:mount",
@@ -307,17 +314,15 @@ describe('useEffect behavior tracking with snapshots', () => {
     const $basicNookEffect = createTrackableNookEffect('basic');
     const $conditionalNookEffect = createTrackableNookEffect('conditional');
 
-    function NookEffectComponent(props: {
-      showConditional: boolean;
-    }) {
-      renderCount++;
+    function NookEffectComponent(props: { showConditional: boolean }) {
+      events.push('render');
       useNook(() => {
         $basicNookEffect``();
         if (props.showConditional) {
           $conditionalNookEffect``();
         }
       });
-      return <div>Nook Effect Component (render #{renderCount})</div>;
+      return <div>Nook Effect Component</div>;
     }
 
     it('should track nook effects in Strict Mode', () => {
@@ -335,15 +340,17 @@ describe('useEffect behavior tracking with snapshots', () => {
       );
 
       // Nook effects also get Strict Mode double invocation
-      expect(effectEvents).toMatchInlineSnapshot(`
+      expect(events).toMatchInlineSnapshot(`
         [
+          "render",
+          "render",
           "nook-basic:mount",
           "nook-basic:cleanup",
           "nook-basic:mount",
         ]
       `);
 
-      effectEvents = [];
+      events = [];
       result.rerender(
         <StrictMode>
           <NookEffectComponent showConditional={true} />
@@ -351,8 +358,10 @@ describe('useEffect behavior tracking with snapshots', () => {
       );
 
       // Conditional nook mounting also exhibits Strict Mode behavior
-      expect(effectEvents).toMatchInlineSnapshot(`
+      expect(events).toMatchInlineSnapshot(`
         [
+          "render",
+          "render",
           "nook-basic:mount",
           "nook-conditional:mount",
         ]
@@ -368,18 +377,20 @@ describe('useEffect behavior tracking with snapshots', () => {
       const result = render(<NookEffectComponent showConditional={false} />);
 
       // Single mount for nook effects
-      expect(effectEvents).toMatchInlineSnapshot(`
+      expect(events).toMatchInlineSnapshot(`
         [
+          "render",
           "nook-basic:mount",
         ]
       `);
 
-      effectEvents = [];
+      events = [];
       result.rerender(<NookEffectComponent showConditional={true} />);
 
       // Conditional nook mounts once
-      expect(effectEvents).toMatchInlineSnapshot(`
+      expect(events).toMatchInlineSnapshot(`
         [
+          "render",
           "nook-basic:cleanup",
           "nook-basic:mount",
           "nook-basic:mount",
@@ -391,18 +402,14 @@ describe('useEffect behavior tracking with snapshots', () => {
 
   describe('Effect cleanup timing and order', () => {
     function CleanupOrderComponent({ phase }: { phase: string }) {
-      renderCount++;
+      events.push('render');
 
       // Multiple effects to test cleanup order
       createTrackableEffect(`phase-${phase}-effect1`)();
       createTrackableEffect(`phase-${phase}-effect2`)();
       createTrackableEffect(`phase-${phase}-effect3`)();
 
-      return (
-        <div>
-          Cleanup Order Component - Phase: {phase} (render #{renderCount})
-        </div>
-      );
+      return <div>Cleanup Order Component - Phase: {phase}</div>;
     }
 
     it('should track cleanup order in Strict Mode', () => {
@@ -421,8 +428,10 @@ describe('useEffect behavior tracking with snapshots', () => {
       );
 
       // Strict Mode: mount all, cleanup all in reverse order, mount all again
-      expect(effectEvents).toMatchInlineSnapshot(`
+      expect(events).toMatchInlineSnapshot(`
         [
+          "render",
+          "render",
           "phase-A-effect1:mount",
           "phase-A-effect2:mount",
           "phase-A-effect3:mount",
@@ -435,7 +444,7 @@ describe('useEffect behavior tracking with snapshots', () => {
         ]
       `);
 
-      effectEvents = [];
+      events = [];
       result.rerender(
         <StrictMode>
           <CleanupOrderComponent phase="B" />
@@ -443,8 +452,10 @@ describe('useEffect behavior tracking with snapshots', () => {
       );
 
       // Phase change: cleanup old effects, mount new ones with Strict Mode pattern
-      expect(effectEvents).toMatchInlineSnapshot(`
+      expect(events).toMatchInlineSnapshot(`
         [
+          "render",
+          "render",
           "phase-A-effect1:cleanup",
           "phase-A-effect2:cleanup",
           "phase-A-effect3:cleanup",
@@ -464,20 +475,22 @@ describe('useEffect behavior tracking with snapshots', () => {
       const result = render(<CleanupOrderComponent phase="A" />);
 
       // Simple mount order
-      expect(effectEvents).toMatchInlineSnapshot(`
+      expect(events).toMatchInlineSnapshot(`
         [
+          "render",
           "phase-A-effect1:mount",
           "phase-A-effect2:mount",
           "phase-A-effect3:mount",
         ]
       `);
 
-      effectEvents = [];
+      events = [];
       result.rerender(<CleanupOrderComponent phase="B" />);
 
       // Clean cleanup and remount pattern
-      expect(effectEvents).toMatchInlineSnapshot(`
+      expect(events).toMatchInlineSnapshot(`
         [
+          "render",
           "phase-A-effect1:cleanup",
           "phase-A-effect2:cleanup",
           "phase-A-effect3:cleanup",
@@ -492,15 +505,15 @@ describe('useEffect behavior tracking with snapshots', () => {
   describe('State updates and effect interactions', () => {
     const useStateDependentEffect = createTrackableEffect('state-dependent');
     function StateEffectComponent() {
+      events.push('render');
       const [count, setCount] = useState(0);
-      renderCount++;
 
       // Effect that depends on state
       useStateDependentEffect([count]);
 
       // Effect that updates state (with proper cleanup)
       useEffect(() => {
-        effectEvents.push('state-updater:mount');
+        events.push('state-updater:mount');
         const timer = setTimeout(() => {
           if (count < 2) {
             setCount((c) => c + 1);
@@ -508,14 +521,14 @@ describe('useEffect behavior tracking with snapshots', () => {
         }, 10);
 
         return () => {
-          effectEvents.push('state-updater:cleanup');
+          events.push('state-updater:cleanup');
           clearTimeout(timer);
         };
       }, [count]);
 
       return (
         <div>
-          State Effect Component - Count: {count} (render #{renderCount})
+          State Effect Component - Count: {count}
           <button type="button" onClick={() => setCount((c) => c + 1)}>
             Increment
           </button>
@@ -540,8 +553,10 @@ describe('useEffect behavior tracking with snapshots', () => {
       );
 
       // Initial Strict Mode pattern for both effects
-      expect(effectEvents).toMatchInlineSnapshot(`
+      expect(events).toMatchInlineSnapshot(`
         [
+          "render",
+          "render",
           "state-dependent:mount",
           "state-updater:mount",
           "state-dependent:cleanup",
@@ -555,14 +570,18 @@ describe('useEffect behavior tracking with snapshots', () => {
       await new Promise((resolve) => setTimeout(resolve, 20));
 
       // State change triggers new effect cycle with Strict Mode behavior
-      expect(effectEvents).toMatchInlineSnapshot(`
+      expect(events).toMatchInlineSnapshot(`
         [
+          "render",
+          "render",
           "state-dependent:mount",
           "state-updater:mount",
           "state-dependent:cleanup",
           "state-updater:cleanup",
           "state-dependent:mount",
           "state-updater:mount",
+          "render",
+          "render",
           "state-dependent:cleanup",
           "state-updater:cleanup",
           "state-dependent:mount",
