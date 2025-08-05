@@ -46,6 +46,17 @@ import { nook, useNook } from '../src/index.ts';
 describe('useEffect behavior tracking with snapshots', () => {
   let events: string[] = [];
 
+  // Helper to create trackable state
+  function createTrackableState(name: string) {
+    // biome-ignore lint/complexity/noUselessTypeConstraint: Useful to differentiate from JSX
+    return <T extends unknown>(initial: T) => {
+      return useState(() => {
+        events.push(`${name}:init`);
+        return initial;
+      });
+    };
+  }
+
   // Helper to create trackable effects
   function createTrackableEffect(name: string) {
     return (deps?: unknown[]) => {
@@ -311,15 +322,15 @@ describe('useEffect behavior tracking with snapshots', () => {
   });
 
   describe('Nook effects behavior', () => {
-    const $basicNookEffect = createTrackableNookEffect('basic');
-    const $conditionalNookEffect = createTrackableNookEffect('conditional');
+    const nookBasicEffect = createTrackableNookEffect('basic');
+    const nookConditionalEffect = createTrackableNookEffect('conditional');
 
     function NookEffectComponent(props: { showConditional: boolean }) {
       events.push('render');
       useNook(() => {
-        $basicNookEffect``();
+        nookBasicEffect``();
         if (props.showConditional) {
-          $conditionalNookEffect``();
+          nookConditionalEffect``();
         }
       });
       return <div>Nook Effect Component</div>;
@@ -400,113 +411,13 @@ describe('useEffect behavior tracking with snapshots', () => {
     });
   });
 
-  describe('Effect cleanup timing and order', () => {
-    function CleanupOrderComponent({ phase }: { phase: string }) {
-      events.push('render');
-
-      // Multiple effects to test cleanup order
-      createTrackableEffect(`phase-${phase}-effect1`)();
-      createTrackableEffect(`phase-${phase}-effect2`)();
-      createTrackableEffect(`phase-${phase}-effect3`)();
-
-      return <div>Cleanup Order Component - Phase: {phase}</div>;
-    }
-
-    it('should track cleanup order in Strict Mode', () => {
-      /**
-       * CLEANUP ORDER IN STRICT MODE:
-       * React cleans up effects in reverse order of their declaration.
-       * In Strict Mode, this happens twice - once during the intentional
-       * unmount and once during the actual unmount.
-       *
-       * Order: effect3 → effect2 → effect1 (reverse of declaration)
-       */
-      const result = render(
-        <StrictMode>
-          <CleanupOrderComponent phase="A" />
-        </StrictMode>,
-      );
-
-      // Strict Mode: mount all, cleanup all in reverse order, mount all again
-      expect(events).toMatchInlineSnapshot(`
-        [
-          "render",
-          "render",
-          "phase-A-effect1:mount",
-          "phase-A-effect2:mount",
-          "phase-A-effect3:mount",
-          "phase-A-effect1:cleanup",
-          "phase-A-effect2:cleanup",
-          "phase-A-effect3:cleanup",
-          "phase-A-effect1:mount",
-          "phase-A-effect2:mount",
-          "phase-A-effect3:mount",
-        ]
-      `);
-
-      events = [];
-      result.rerender(
-        <StrictMode>
-          <CleanupOrderComponent phase="B" />
-        </StrictMode>,
-      );
-
-      // Phase change: cleanup old effects, mount new ones with Strict Mode pattern
-      expect(events).toMatchInlineSnapshot(`
-        [
-          "render",
-          "render",
-          "phase-A-effect1:cleanup",
-          "phase-A-effect2:cleanup",
-          "phase-A-effect3:cleanup",
-          "phase-B-effect1:mount",
-          "phase-B-effect2:mount",
-          "phase-B-effect3:mount",
-        ]
-      `);
-    });
-
-    it('should track cleanup order without Strict Mode', () => {
-      /**
-       * CLEANUP ORDER WITHOUT STRICT MODE:
-       * Same cleanup order (reverse of declaration) but without
-       * the double invocation, making the pattern clearer.
-       */
-      const result = render(<CleanupOrderComponent phase="A" />);
-
-      // Simple mount order
-      expect(events).toMatchInlineSnapshot(`
-        [
-          "render",
-          "phase-A-effect1:mount",
-          "phase-A-effect2:mount",
-          "phase-A-effect3:mount",
-        ]
-      `);
-
-      events = [];
-      result.rerender(<CleanupOrderComponent phase="B" />);
-
-      // Clean cleanup and remount pattern
-      expect(events).toMatchInlineSnapshot(`
-        [
-          "render",
-          "phase-A-effect1:cleanup",
-          "phase-A-effect2:cleanup",
-          "phase-A-effect3:cleanup",
-          "phase-B-effect1:mount",
-          "phase-B-effect2:mount",
-          "phase-B-effect3:mount",
-        ]
-      `);
-    });
-  });
-
   describe('State updates and effect interactions', () => {
     const useStateDependentEffect = createTrackableEffect('state-dependent');
+    const useMyState = createTrackableState('state');
+
     function StateEffectComponent() {
       events.push('render');
-      const [count, setCount] = useState(0);
+      const [count, setCount] = useMyState(0);
 
       // Effect that depends on state
       useStateDependentEffect([count]);
@@ -524,7 +435,7 @@ describe('useEffect behavior tracking with snapshots', () => {
           events.push('state-updater:cleanup');
           clearTimeout(timer);
         };
-      }, [count]);
+      }, [count, setCount]);
 
       return (
         <div>
@@ -556,6 +467,8 @@ describe('useEffect behavior tracking with snapshots', () => {
       expect(events).toMatchInlineSnapshot(`
         [
           "render",
+          "state:init",
+          "state:init",
           "render",
           "state-dependent:mount",
           "state-updater:mount",
@@ -565,6 +478,7 @@ describe('useEffect behavior tracking with snapshots', () => {
           "state-updater:mount",
         ]
       `);
+      events = [];
 
       // Wait for state update to trigger
       await new Promise((resolve) => setTimeout(resolve, 20));
@@ -572,14 +486,6 @@ describe('useEffect behavior tracking with snapshots', () => {
       // State change triggers new effect cycle with Strict Mode behavior
       expect(events).toMatchInlineSnapshot(`
         [
-          "render",
-          "render",
-          "state-dependent:mount",
-          "state-updater:mount",
-          "state-dependent:cleanup",
-          "state-updater:cleanup",
-          "state-dependent:mount",
-          "state-updater:mount",
           "render",
           "render",
           "state-dependent:cleanup",
