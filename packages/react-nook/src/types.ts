@@ -34,7 +34,13 @@ export interface CallbackStore<T = unknown> {
   destroy?: undefined;
 }
 
-export type Store = StateStore | EffectStore | CallbackStore;
+export interface MemoStore<T = unknown> {
+  value: T;
+  deps: unknown[] | undefined;
+  destroy?: undefined;
+}
+
+export type Store = StateStore | EffectStore | CallbackStore | MemoStore;
 
 export interface Scope {
   /**

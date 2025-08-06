@@ -4,6 +4,7 @@ import { CTX } from './ctx.ts';
 import { DEBUG } from './debug.ts';
 import { callExpressionTrackedEffect } from './effect.ts';
 import { mockHooks } from './hook-mock.ts';
+import { callExpressionTrackedMemo } from './memo.ts';
 import { callExpressionTrackedState } from './state.ts';
 import type { AnyFn, EffectCleanup, RootScope, Scope } from './types.ts';
 
@@ -209,6 +210,11 @@ export const $callback =
   (strings: TemplateStringsArray) =>
   <T extends AnyFn>(callback: T, deps?: unknown[] | undefined) =>
     callExpressionTrackedCallback(strings, callback, deps);
+
+export const $memo =
+  (strings: TemplateStringsArray) =>
+  <T>(factory: () => T, deps?: unknown[] | undefined) =>
+    callExpressionTrackedMemo(strings, factory, deps);
 
 interface Nook<TArgs extends unknown[], TReturn> {
   (strings: TemplateStringsArray): (...args: TArgs) => TReturn;
