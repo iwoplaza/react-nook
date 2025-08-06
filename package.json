@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "pnpm -r --filter react-nook-docs dev",
+    "fix": "biome check --write",
     "test:unit:watch": "vitest",
     "test:unit": "vitest run",
     "test:types": "pnpm -r test:types"

@@ -1,6 +1,6 @@
+import { render } from '@testing-library/react';
 import { useEffect, useId } from 'react';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { render } from '@testing-library/react';
 import { nook, useNook } from '../src/index.ts';
 
 describe('using nooks', () => {
