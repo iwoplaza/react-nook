@@ -24,7 +24,7 @@ import { nook } from 'react-nook';
 // ✨ Create conditional nooks from your
 // existing library of hooks, no rewrite
 // necessary!
-const $myFeature = nook(useMyFeature);
+const mountMyFeature = nook(useMyFeature);
 ```
 
 ## Documentation
