@@ -1,7 +1,7 @@
+export type EffectCleanup = () => void;
+
 export type Setter<T> = ((value: T) => void) &
   ((compute: (prev: T) => T) => void);
-
-export type EffectCleanup = () => void;
 
 export type AnyFn = (...args: never[]) => unknown;
 
@@ -9,19 +9,29 @@ export type AnyFn = (...args: never[]) => unknown;
 export interface StateStore<T = any> {
   value: T;
   setter: Setter<T>;
-  unmount?: undefined;
+  destroy?: undefined;
 }
 
 export interface EffectStore {
   deps: unknown[] | undefined;
-  cleanup: EffectCleanup | undefined;
+  /**
+   * To be called in a useEffect
+   */
+  mount(): void;
+  /**
+   * To be called in the cleanup function of a useEffect
+   */
   unmount(): void;
+  /**
+   * To be called in a useEffect, before mounting dirty effects
+   */
+  destroy(): void;
 }
 
 export interface CallbackStore<T = unknown> {
   callback: T;
   deps: unknown[] | undefined;
-  unmount?: undefined;
+  destroy?: undefined;
 }
 
 export type Store = StateStore | EffectStore | CallbackStore;
@@ -37,20 +47,34 @@ export interface Scope {
   // Since we allow (some) standard React hooks to be used within nooks, we need order tracking for them
   lastHookIndex: number;
   hookStores: Store[];
-  effectsToFlush: (() => void)[];
 
   /**
-   * Reset before every render to be keys of `stores`, then
-   * each custom nook call takes itself out of this set.
+   * Reset before every render to be keys of `children`, then
+   * each nook call takes itself out of this set.
    *
    * At the end of the scope, those that have not reported are
-   * unmounted (cleaned-up).
+   * destroyed (cleaned-up).
    */
-  scheduledUnmounts: Map</* call id */ object, Scope | Store>;
+  scheduledDestroys: Map</* call id */ object, Scope | Store>;
 
+  destroy(): void;
+}
+
+export interface RootScope extends Scope {
   /**
-   * This should call all scheduled unmounts, but not remove the scheduled mounts! That is because
-   * React likes to run effects twice to test for side-effects.
+   * Set to false when an effect is considered dirty during
+   * rendering, set to true when dirty effects were remounted.
+   *
+   * This can be used to track whether or not to reset `dirtyEffects`
+   * at the beginning of a render. We don't want to reset dirtyEffects
+   * if the effects that were marked last rendered didn't have a chance
+   * to be flushed. We also don't want to reset `dirtyEffects` right after
+   * mounting, as Strict Mode can force us to mount, unmount, then mount again.
    */
-  unmount(): void;
+  effectsFlushed: boolean;
+  dirtyEffects: Set<EffectStore>;
+  /**
+   * All reachable effects
+   */
+  effects: Set<EffectStore>;
 }

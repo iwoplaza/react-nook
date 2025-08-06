@@ -5,7 +5,37 @@ import { DEBUG } from './debug.ts';
 import { callExpressionTrackedEffect } from './effect.ts';
 import { mockHooks } from './hook-mock.ts';
 import { callExpressionTrackedState } from './state.ts';
-import type { AnyFn, EffectCleanup, Scope } from './types.ts';
+import type { AnyFn, EffectCleanup, RootScope, Scope } from './types.ts';
+
+function createRootScope(): RootScope {
+  return {
+    depth: 0,
+    // Expression-tracking
+    children: new Map(),
+    scopes: new Map(),
+    // Order-tracking
+    lastHookIndex: -1,
+    hookStores: [],
+
+    effectsFlushed: true,
+    dirtyEffects: new Set(),
+    effects: new Set(),
+
+    scheduledDestroys: new Map(),
+
+    destroy() {
+      for (const child of this.children.values()) {
+        child.destroy?.();
+      }
+      this.children.clear();
+
+      for (const store of this.hookStores) {
+        store.destroy?.();
+      }
+      this.hookStores = [];
+    },
+  };
+}
 
 function createScope(depth: number = 0): Scope {
   DEBUG(`Creating scope of depth ${depth}`);
@@ -17,18 +47,17 @@ function createScope(depth: number = 0): Scope {
     // Order-tracking
     lastHookIndex: -1,
     hookStores: [],
-    effectsToFlush: [],
 
-    scheduledUnmounts: new Map(),
+    scheduledDestroys: new Map(),
 
-    unmount() {
+    destroy() {
       for (const child of this.children.values()) {
-        child.unmount?.();
+        child.destroy?.();
       }
       this.children.clear();
 
       for (const store of this.hookStores) {
-        store.unmount?.();
+        store.destroy?.();
       }
       this.hookStores = [];
     },
@@ -44,7 +73,7 @@ function setupScope<T>(cb: () => T): T {
   }
 
   DEBUG(`Setting up scope of depth ${scope.depth}`);
-  scope.scheduledUnmounts = new Map(scope.children.entries());
+  scope.scheduledDestroys = new Map(scope.children.entries());
   scope.lastHookIndex = -1;
 
   const result = cb();
@@ -52,29 +81,17 @@ function setupScope<T>(cb: () => T): T {
   return result;
 }
 
-function flushScheduledEffects(scope: Scope) {
-  DEBUG('Flushing effects', scope.effectsToFlush.length);
-  for (const effect of scope.effectsToFlush) {
-    effect();
-  }
-  scope.effectsToFlush = [];
-
+function flushScheduledDestroys(scope: Scope) {
+  // Doing it recursively for nested scopes
   for (const nested of scope.scopes.values()) {
-    flushScheduledEffects(nested);
+    flushScheduledDestroys(nested);
   }
-}
 
-function flushScheduledUnmounts(scope: Scope) {
-  // Deleting all stores that have not checked in
-  for (const [callId, disposable] of scope.scheduledUnmounts.entries()) {
-    disposable.unmount?.();
+  // Deleting all children that have not checked in
+  for (const [callId, disposable] of scope.scheduledDestroys.entries()) {
+    disposable.destroy?.();
     scope.children.delete(callId);
-    scope.scopes.delete(callId); // Might now be a scope, but does not matter
-  }
-
-  // Doing it recursively for nested scopes (those that have not been unmounted)
-  for (const nested of scope.scopes.values()) {
-    flushScheduledUnmounts(nested);
+    scope.scopes.delete(callId); // Might not be a scope, but does not matter
   }
 }
 
@@ -90,39 +107,59 @@ function useTopLevelScope<T>(cb: () => T): T {
     CTX.rerenderRequested = true;
   }, []);
 
-  // This useState calls `createScope` two times before continuing the render the first
+  // This useState calls `createRootScope` two times before continuing the render the first
   // time the component is mounted in strict mode.
   // biome-ignore lint/correctness/useHookAtTopLevel: this is not a normal component
-  const [scope] = useState(createScope);
+  const [scope] = useState(createRootScope);
+  CTX.rootScope = scope;
   CTX.parentScope = scope;
   CTX.rerenderRequested = false;
+
+  if (scope.effectsFlushed) {
+    // Resetting the set of dirty effects only if
+    // the previous set has already been flushed.
+    scope.dirtyEffects = new Set();
+  }
 
   let result: T;
   try {
     result = setupScope(cb);
   } finally {
     // Cleanup
+    CTX.rootScope = undefined;
     CTX.parentScope = undefined;
     CTX.rerender = undefined;
   }
 
-  // This effect should run after every render
   // biome-ignore lint/correctness/useHookAtTopLevel: this is not a normal component
   useEffect(() => {
-    flushScheduledEffects(scope);
+    for (const effect of scope.effects) {
+      effect.mount();
+    }
 
     return () => {
-      flushScheduledUnmounts(scope);
+      for (const effect of scope.effects) {
+        effect.unmount();
+      }
     };
   });
 
+  // This effect should run after every render
   // biome-ignore lint/correctness/useHookAtTopLevel: this is not a normal component
   useEffect(() => {
-    return () => {
-      // Cleaning up the top-level scope when the component gets unmounted
-      scope.unmount();
-    };
-  }, [scope]);
+    DEBUG('useEffect()');
+    flushScheduledDestroys(scope);
+
+    scope.effectsFlushed = true;
+    // Cloning the effects here, so that we can unmount
+    // exactly those that were mounted before.
+    const dirtyEffects = [...scope.dirtyEffects];
+    for (const effect of dirtyEffects) {
+      effect.mount();
+    }
+
+    DEBUG('end of useEffect()');
+  });
 
   return result;
 }
@@ -140,7 +177,7 @@ function withScope<T>(callId: object, callback: () => T): T {
     CTX.parentScope.scopes.set(callId, scope);
   } else {
     // Please don't delete me during this render
-    CTX.parentScope.scheduledUnmounts.delete(callId);
+    CTX.parentScope.scheduledDestroys.delete(callId);
   }
 
   const prevParentScope = CTX.parentScope;

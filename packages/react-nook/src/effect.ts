@@ -2,10 +2,6 @@ import { CTX } from './ctx.ts';
 import { DEBUG } from './debug.ts';
 import type { EffectCleanup, EffectStore } from './types.ts';
 
-export function destroyEffectStore(store: EffectStore) {
-  store.cleanup?.();
-}
-
 export function callExpressionTrackedEffect(
   callId: object,
   callback: () => EffectCleanup,
@@ -17,39 +13,57 @@ export function callExpressionTrackedEffect(
   }
 
   const scope = CTX.parentScope;
-  if (!scope) {
+  const rootScope = CTX.rootScope;
+  if (!scope || !rootScope) {
     throw new Error('Invalid state');
   }
 
   let store = scope.children.get(callId) as EffectStore | undefined;
+
   if (!store) {
     // First time mounting this effect!
-    const cleanup = callback();
+    let cleanup: EffectCleanup | undefined;
+
     store = {
       deps,
-      cleanup,
+      mount() {
+        this.unmount();
+        DEBUG('mounting');
+        cleanup = callback();
+      },
       unmount() {
-        this.cleanup?.();
+        if (cleanup) {
+          cleanup();
+          cleanup = undefined;
+        }
+      },
+      destroy() {
+        rootScope.effects.delete(this);
+        this.unmount();
       },
     };
+    rootScope.effects.add(store);
+    rootScope.dirtyEffects.add(store);
+    rootScope.effectsFlushed = false;
     scope.children.set(callId, store);
   } else {
-    // Please don't unmount me during this render
-    scope.scheduledUnmounts.delete(callId);
+    // Please don't destroy me during this render
+    scope.scheduledDestroys.delete(callId);
   }
 
   // Comparing with the previous render
   if (
-    // Not tracking deps?
     !store.deps ||
     !deps ||
-    // Deps changed?
     store.deps.length !== deps.length ||
     store.deps.some((v, idx) => deps[idx] !== v)
   ) {
-    store.cleanup?.(); // cleanup old effect
-    store.cleanup = callback();
+    rootScope.dirtyEffects.add(store);
+    rootScope.effectsFlushed = false;
   }
+
+  // Update deps for next comparison
+  store.deps = deps;
 }
 
 export function callOrderTrackedEffect(
@@ -62,39 +76,50 @@ export function callOrderTrackedEffect(
   }
 
   const scope = CTX.parentScope;
-  if (!scope) {
+  const rootScope = CTX.rootScope;
+  if (!scope || !rootScope) {
     throw new Error('Invalid state');
   }
 
   const hookIdx = ++scope.lastHookIndex;
   let store = scope.hookStores[hookIdx] as EffectStore | undefined;
-  const recompute = () => {
-    (store as EffectStore).cleanup?.(); // cleanup old effect
-    (store as EffectStore).cleanup = callback();
-  };
   if (!store) {
-    const newStore: EffectStore = {
+    // First time mounting this effect!
+    let cleanup: EffectCleanup | undefined;
+    store = {
       deps,
-      cleanup: undefined,
+      mount() {
+        this.unmount();
+        DEBUG('mounting');
+        cleanup = callback();
+      },
       unmount() {
-        this.cleanup?.();
+        if (cleanup) {
+          cleanup();
+          cleanup = undefined;
+        }
+      },
+      destroy() {
+        DEBUG('destroying effect');
+        this.unmount();
       },
     };
-    store = newStore;
-    DEBUG(`Pushing effect to flush`, callback);
-    scope.effectsToFlush.push(recompute);
+    rootScope.dirtyEffects.add(store);
+    rootScope.effectsFlushed = false;
     scope.hookStores[hookIdx] = store;
   }
 
   // Comparing with the previous render
   if (
-    // Not tracking deps?
     !store.deps ||
     !deps ||
-    // Deps changed?
     store.deps.length !== deps.length ||
     store.deps.some((v, idx) => deps[idx] !== v)
   ) {
-    scope.effectsToFlush.push(recompute);
+    rootScope.dirtyEffects.add(store);
+    rootScope.effectsFlushed = false;
   }
+
+  // Update deps for next comparison
+  store.deps = deps;
 }

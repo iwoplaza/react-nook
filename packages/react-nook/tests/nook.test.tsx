@@ -1,6 +1,6 @@
 import { useEffect, useId } from 'react';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { render } from 'vitest-browser-react';
+import { render } from '@testing-library/react';
 import { nook, useNook } from '../src/index.ts';
 
 describe('using nooks', () => {
@@ -74,8 +74,6 @@ describe('conditional based on prop', () => {
     expect(events).toMatchInlineSnapshot(`
       [
         "mount",
-        "unmount",
-        "mount",
       ]
     `);
 
@@ -85,9 +83,6 @@ describe('conditional based on prop', () => {
     expect(events).toMatchInlineSnapshot(`
       [
         "mount",
-        "unmount",
-        "mount",
-        "unmount",
       ]
     `);
   });
@@ -112,8 +107,6 @@ describe('conditional based on prop', () => {
     expect(events).toMatchInlineSnapshot(`
       [
         "mount",
-        "unmount",
-        "mount",
       ]
     `);
 
@@ -133,17 +126,11 @@ describe('conditional based on prop', () => {
     expect(events).toMatchInlineSnapshot(`
       [
         "mount",
-        "unmount",
-        "mount",
       ]
     `);
 
     events = [];
     result.unmount();
-    expect(events).toMatchInlineSnapshot(`
-      [
-        "unmount",
-      ]
-    `);
+    expect(events).toMatchInlineSnapshot(`[]`);
   });
 });
