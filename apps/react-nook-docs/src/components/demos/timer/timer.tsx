@@ -6,7 +6,7 @@ import { useTimer } from './use-timer';
 
 // ---cut-before---
 // Turn any hook into a ✨ nook ✨
-const $timer = nook(useTimer);
+const mountTimer = nook(useTimer);
 
 // Nooks are just functions that can use other nooks, so they can also be components
 const Timer = nook(() => {
@@ -15,8 +15,8 @@ const Timer = nook(() => {
 
   return (
     <div className="grid gap-2 max-w-sm place-items-center place-content-center mx-auto grid-cols-2 m-12">
-      {/* Only using `$timer` when active, directly in markup */}
-      <p className="min-w-[5rem]">Time: {active ? $timer``(100) : 0}</p>
+      {/* Only using `mountTimer` when active, directly in markup */}
+      <p className="min-w-[5rem]">Time: {active ? mountTimer``(100) : 0}</p>
       <Btn onClick={toggle} highlighted={active}>
         {active ? 'Stop' : 'Start'}
       </Btn>

@@ -106,7 +106,7 @@ of tagged template literals, and is described in more details here.](#how-does-i
 Let's go over the relationship between <Hooks /> and <Nooks />
 - <Hooks /> **CANNOT** use other <Hooks /> conditionally (the whole reason we're here)
 - <Hooks /> can use <Nooks /> conditionally: `useNook(...)`
-- <Nooks /> can use other <Nooks /> conditionally: `$foo``(...)`
+- <Nooks /> can use other <Nooks /> conditionally: `mountFoo``(...)`
 - <Nooks /> can use <Hooks /> conditionally: `nook(useFoo)`
 
 ### Creating nooks
@@ -122,13 +122,13 @@ function useToggle(initial: boolean) {
 }
 
 // A nook with the same behavior
-const $toggle = nook(useToggle);
+const mountToggle = nook(useToggle);
 ```
 
 If you're just now beginning to write these <Hooks />, you may want to write them as <Nooks /> to begin with!
 
 ```ts
-const $toggle = nook((initial: boolean) => {
+const mountToggle = nook((initial: boolean) => {
   const [value, setValue] = useState(initial);
   const toggle = useCallback(() => setValue((prev) => !prev), []);
 
@@ -136,13 +136,13 @@ const $toggle = nook((initial: boolean) => {
 });
 ```
 
-The convention is to name nooks starting with a `$` sign, just to visually differentiate <Nooks /> from <Hooks />.
+The convention is to name nooks starting with `mount` instead of `use`, just to visually differentiate <Nooks /> from <Hooks />.
 
 ### Using nooks
 
-The <Nooks /> API can seem strange as first, but you get used to it. To use `$foo` we append an empty template to it, then call the result:
+The <Nooks /> API can seem strange as first, but you get used to it. To use `mountFoo` we append an empty template to it, then call the result:
 ```ts
-$foo``(first_arg, second_arg, ...);
+mountFoo``(first_arg, second_arg, ...);
 ```
 Compared to the <Hooks /> version:
 ```ts
@@ -161,7 +161,7 @@ function Component(props) {
   const [value, toggle] = useNook(() => {
     // Aahh... all cozy and nice
     if (props.active) {
-      return $toggle``();
+      return mountToggle``();
     }
     // If not active, return a fallback and a noop
     return ['Inactive', () => {}];
@@ -174,16 +174,16 @@ function Component(props) {
 
 No additional wrapper is necessary in this case:
 ```ts
-const $timer = nook(() => {
+const mountTimer = nook(() => {
   const [value, setValue] = useState(0);
   // ...
   return value;
 });
 
-const $timerWithToggle = nook((initialActive: boolean) => {
+const mountTimerWithToggle = nook((initialActive: boolean) => {
   const [active, setActive] = useState(initialActive);
   // Resets each time we toggle active, because the timer gets unmounted
-  const time = active ? $timer``() : 0;
+  const time = active ? mountTimer``() : 0;
 
   const toggle = useCallback(() => setActive((prev) => !prev), []);
 

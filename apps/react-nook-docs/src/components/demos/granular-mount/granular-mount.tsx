@@ -6,7 +6,7 @@ import { useInterval, useModuloCounter, useToggle } from './hooks';
 
 // ---cut-before---
 // Turn any hook into a ✨ nook ✨
-const $interval = nook(useInterval);
+const mountInterval = nook(useInterval);
 
 function GranularMount() {
   // Animation state
@@ -18,8 +18,8 @@ function GranularMount() {
   // You can use nooks inside regular components via
   // the `useNook` hook
   useNook(() => {
-    walk && $interval``(incrementWalkIdx, 100);
-    look && $interval``(incrementLookIdx, 100);
+    walk && mountInterval``(incrementWalkIdx, 100);
+    look && mountInterval``(incrementLookIdx, 100);
   });
 
   return (
