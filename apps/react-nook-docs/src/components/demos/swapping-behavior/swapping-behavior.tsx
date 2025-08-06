@@ -16,14 +16,14 @@ function useDecrement(initial: number) {
   return [value, increment] as const;
 }
 
-const $increment = nook(useIncrement);
-const $decrement = nook(useDecrement);
+const mountIncrement = nook(useIncrement);
+const mountDecrement = nook(useDecrement);
 
 // Nooks are just functions that can use other nooks, so they can also be components!
 const DemoSwappingBehavior = nook(() => {
   const [mode, setMode] = useState<'increment' | 'decrement'>('increment');
   const [count, action] =
-    mode === 'increment' ? $increment``(0) : $decrement``(100);
+    mode === 'increment' ? mountIncrement``(0) : mountDecrement``(100);
 
   return (
     <div className="grid gap-2 max-w-sm place-items-center mx-auto mt-12 grid-cols-2">

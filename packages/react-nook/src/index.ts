@@ -196,22 +196,22 @@ function withScope<T>(callId: object, callback: () => T): T {
   return result;
 }
 
-export const $state =
+export const mountState =
   (strings: TemplateStringsArray) =>
   <T>(initial: T) =>
     callExpressionTrackedState(strings, initial);
 
-export const $effect =
+export const mountEffect =
   (strings: TemplateStringsArray) =>
   (callback: () => EffectCleanup, deps?: unknown[] | undefined) =>
     callExpressionTrackedEffect(strings, callback, deps);
 
-export const $callback =
+export const mountCallback =
   (strings: TemplateStringsArray) =>
   <T extends AnyFn>(callback: T, deps?: unknown[] | undefined) =>
     callExpressionTrackedCallback(strings, callback, deps);
 
-export const $memo =
+export const mountMemo =
   (strings: TemplateStringsArray) =>
   <T>(factory: () => T, deps?: unknown[] | undefined) =>
     callExpressionTrackedMemo(strings, factory, deps);

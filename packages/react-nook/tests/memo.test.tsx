@@ -1,14 +1,14 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import { $memo, useNook } from '../src/index.ts';
+import { mountMemo, useNook } from '../src/index.ts';
 
-describe('$memo nook', () => {
+describe('mountMemo nook', () => {
   it('should memoize values based on dependencies', () => {
     const factory = vi.fn(() => Math.random());
 
     function TestComponent({ value }: { value: number }) {
       const memoized = useNook(() => {
-        return $memo``(() => factory(), [value]);
+        return mountMemo``(() => factory(), [value]);
       });
       return <div>{memoized}</div>;
     }
@@ -34,7 +34,7 @@ describe('$memo nook', () => {
 
     function TestComponent({ input }: { input: number }) {
       const result = useNook(() => {
-        return $memo``(() => expensiveComputation(input), [input]);
+        return mountMemo``(() => expensiveComputation(input), [input]);
       });
       return <div>{result}</div>;
     }
@@ -54,7 +54,7 @@ describe('$memo nook', () => {
 
     function TestComponent() {
       const memoized = useNook(() => {
-        return $memo``(() => factory());
+        return mountMemo``(() => factory());
       });
       return <div>{memoized}</div>;
     }
@@ -74,7 +74,7 @@ describe('$memo nook', () => {
 
     function TestComponent() {
       const memoized = useNook(() => {
-        return $memo``(() => factory(), []);
+        return mountMemo``(() => factory(), []);
       });
       return <div>{memoized}</div>;
     }
@@ -91,7 +91,7 @@ describe('$memo nook', () => {
 
     function TestComponent({ num, str }: { num: number; str: string }) {
       const memoized = useNook(() => {
-        return $memo``(() => factory(num, str), [num, str]);
+        return mountMemo``(() => factory(num, str), [num, str]);
       });
       return <div>{memoized}</div>;
     }
@@ -114,7 +114,7 @@ describe('$memo nook', () => {
 
     function TestComponent({ value }: { value: number }) {
       const result = useNook(() => {
-        return $memo``(() => factory(), [value]);
+        return mountMemo``(() => factory(), [value]);
       });
 
       return <div>{result}</div>;
@@ -131,7 +131,7 @@ describe('$memo nook', () => {
   });
 
   it('should throw error when used outside nook context', () => {
-    expect(() => $memo``(() => 'test', [])).toThrowErrorMatchingInlineSnapshot(
+    expect(() => mountMemo``(() => 'test', [])).toThrowErrorMatchingInlineSnapshot(
       `[Error: Invalid state]`,
     );
   });

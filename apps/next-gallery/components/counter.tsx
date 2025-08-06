@@ -3,7 +3,7 @@
 import { useCallback, useEffect } from 'react';
 import { nook } from 'react-nook';
 
-const $interval = nook((callback: () => unknown, interval: number) => {
+const mountInterval = nook((callback: () => unknown, interval: number) => {
   useEffect(() => {
     console.log('Mounted the callback');
     const handle = setInterval(callback, interval);
@@ -16,7 +16,7 @@ const Counter = nook(() => {
     console.log('Hello');
   }, []);
 
-  $interval``(foo, 1000);
+  mountInterval``(foo, 1000);
 
   return <p>Hello</p>;
 });
