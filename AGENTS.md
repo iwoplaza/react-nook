@@ -16,8 +16,8 @@
 - **File extensions**: Use `.ts`/`.tsx` extensions in imports
 
 ## Naming & Patterns
-- Nooks use `$` prefix: `$state`, `$effect`, `$callback`
-- Template literal syntax: `$state\`\`(initial)` for nook calls
+- Nooks use `mount` prefix: `mountState`, `mountEffect`, `mountCallback`
+- Template literal syntax: `mountState\`\`(initial)` for nook calls
 - Regular function calls for components: `nook(() => ...)`
 - Use `readonly` for state tuples: `readonly [T, Setter<T>]`
 
