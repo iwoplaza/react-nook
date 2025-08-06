@@ -7,9 +7,6 @@ hero:
 ---
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
-import Timer from '../../components/demos/timer/index.astro';
-import GranularMount from '../../components/demos/granular-mount/index.astro';
-import SwappingBehavior from '../../components/demos/swapping-behavior/index.astro';
 import Nook from '../../components/nook-lower.astro';
 import NNook from '../../components/nook-upper.astro';
 import Nooks from '../../components/nooks-lower.astro';
@@ -19,16 +16,32 @@ import HHook from '../../components/hook-upper.astro';
 import Hooks from '../../components/hooks-lower.astro';
 import HHooks from '../../components/hooks-upper.astro';
 
-{/* You can install *React Nook* with your favorite package manager. If you're curious about what the library's about, keep reading! */}
+<CardGrid stagger>
+    <Card title="An enhancement, not a replacement">You can use nooks surgically where conditionality matters, without having to rewrite any logic around it. **Reuse your existing hooks and call them conditionally!**</Card>
+    <Card title="Freedom of choice">You're no longer bound by the *Rules of Hooks*. No more splitting into smaller components just to mount an effect sometimes.</Card>
+    <Card title="Out of the box">All nook magic happens at runtime, no additional builds tools are necessary.</Card>
+</CardGrid>
 
-```sh
-npm install react-nook
-```
+## Getting started
 
 :::caution
 *React Nook* is in early development. If you encounter any issues, or have feature requests, [don't hesitate to file them in the GitHub repository!](https://github.com/iwoplaza/react-nook/issues)
 :::
 
+You can use your favorite package manager:
+
+```sh
+npm install react-nook
+```
+
+Then import:
+
+```ts
+import { ... } from 'react-nook';
+```
+
+Want to jump straight into action? There are various [bite-sized demos](/react-nook/demos) that showcase
+specific scenarios where conditional hooks are helpful, and how to use them. If you want a more detailed walkthrough of the features and mechanisms, then keep reading!
 
 ## The problem with React Hooks
 
@@ -193,13 +206,7 @@ const mountTimerWithToggle = nook((initialActive: boolean) => {
 
 ## Demos
 
-### Timer
-
-<Timer />
-
-### Granular mount
-
-<GranularMount />
+There's a variety of [bite-sized demos](/react-nook/demos) to check out!
 
 ## How does it work?
 

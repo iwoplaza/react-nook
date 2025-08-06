@@ -37,6 +37,9 @@ export default defineConfig({
           autogenerate: { directory: 'reference' },
         },
       ],
+      components: {
+        ThemeSelect: './src/components/starlight/ThemeSelect.astro',
+      },
     }),
     react(),
   ],

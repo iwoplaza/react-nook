@@ -9,17 +9,18 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "jotai": "^2.13.0",
+    "next": "15.4.4",
     "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "next": "15.4.4"
+    "react-dom": "19.1.0"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@tailwindcss/postcss": "^4",
+    "react-nook": "workspace:*",
     "tailwindcss": "^4",
-    "react-nook": "workspace:*"
+    "typescript": "^5"
   }
 }
