@@ -1,6 +1,7 @@
-import type { Scope } from './types.ts';
+import type { RootScope, Scope } from './types.ts';
 
 export const CTX: {
+  rootScope: RootScope | undefined;
   parentScope: Scope | undefined;
   /**
    * Used to track whether or not we already requested a re-render during the... render.
@@ -9,6 +10,7 @@ export const CTX: {
   rerenderRequested: boolean;
   rerender: ((...args: never[]) => unknown) | undefined;
 } = {
+  rootScope: undefined,
   parentScope: undefined,
   rerender: undefined,
   rerenderRequested: false,

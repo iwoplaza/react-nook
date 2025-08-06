@@ -83,7 +83,6 @@ describe('conditional based on prop', () => {
     expect(events).toMatchInlineSnapshot(`
       [
         "mount",
-        "unmount",
       ]
     `);
   });
@@ -116,7 +115,6 @@ describe('conditional based on prop', () => {
     result.rerender(<Foo active={false} />);
     expect(events).toMatchInlineSnapshot(`
       [
-        "mount",
         "unmount",
       ]
     `);
@@ -133,10 +131,6 @@ describe('conditional based on prop', () => {
 
     events = [];
     result.unmount();
-    expect(events).toMatchInlineSnapshot(`
-      [
-        "unmount",
-      ]
-    `);
+    expect(events).toMatchInlineSnapshot(`[]`);
   });
 });

@@ -20,7 +20,7 @@ export function callExpressionTrackedCallback<T extends AnyFn>(
     scope.children.set(callId, store);
   } else {
     // Please don't delete me during this render
-    scope.scheduledUnmounts.delete(callId);
+    scope.scheduledDestroys.delete(callId);
   }
 
   // Comparing with the previous render

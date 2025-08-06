@@ -34,7 +34,7 @@ export function callExpressionTrackedState<T>(
     scope.children.set(callId, store);
   } else {
     // Please don't delete me during this render
-    scope.scheduledUnmounts.delete(callId);
+    scope.scheduledDestroys.delete(callId);
   }
 
   return [cachedStore.value, cachedStore.setter];

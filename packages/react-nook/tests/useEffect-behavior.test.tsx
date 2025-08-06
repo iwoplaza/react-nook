@@ -373,6 +373,7 @@ describe('useEffect behavior tracking with snapshots', () => {
         [
           "render",
           "render",
+          "nook-basic:cleanup",
           "nook-basic:mount",
           "nook-conditional:mount",
         ]
@@ -403,7 +404,6 @@ describe('useEffect behavior tracking with snapshots', () => {
         [
           "render",
           "nook-basic:cleanup",
-          "nook-basic:mount",
           "nook-basic:mount",
           "nook-conditional:mount",
         ]
