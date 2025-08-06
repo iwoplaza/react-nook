@@ -368,7 +368,6 @@ describe('useEffect behavior tracking with snapshots', () => {
         </StrictMode>,
       );
 
-      // Conditional nook mounting also exhibits Strict Mode behavior
       expect(events).toMatchInlineSnapshot(`
         [
           "render",
