@@ -1,6 +1,6 @@
 {
   "name": "react-nook",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "An alternate reality where React hooks can be called conditionally.",
   "type": "module",
   "scripts": {
