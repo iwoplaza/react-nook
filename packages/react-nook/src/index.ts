@@ -198,8 +198,8 @@ function withScope<T>(callId: object, callback: () => T): T {
 
 export const mountState =
   (strings: TemplateStringsArray) =>
-  <T>(initial: T) =>
-    callExpressionTrackedState(strings, initial);
+  <T>(initialOrCompute: T | (() => T)) =>
+    callExpressionTrackedState(strings, initialOrCompute);
 
 export const mountEffect =
   (strings: TemplateStringsArray) =>
