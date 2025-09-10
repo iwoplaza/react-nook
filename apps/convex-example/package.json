@@ -1,0 +1,27 @@
+{
+  "name": "convex-example",
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "pnpm run --parallel \"/^dev:.*/\"",
+    "build": "tsc && vite build",
+    "dev:backend": "convex dev",
+    "dev:frontend": "vite --open",
+    "predev": "convex dev --once"
+  },
+  "dependencies": {
+    "@faker-js/faker": "^8.0.2",
+    "convex": "1.23.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-nook": "workspace:"
+  },
+  "devDependencies": {
+    "@types/babel__core": "^7.20.0",
+    "@types/node": "^18.17.0",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^4.2.1",
+    "typescript": "~5.0.3",
+    "vite": "^5.4.12"
+  }
+}

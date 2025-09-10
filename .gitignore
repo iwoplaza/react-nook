@@ -1,3 +1,6 @@
+# MacOS
+.DS_Store
+
 # Node/NPM
 node_modules
 
