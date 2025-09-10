@@ -1,13 +1,18 @@
 import { faker } from '@faker-js/faker';
+import { useMutation, useQuery } from 'convex/react';
 import { useEffect, useState } from 'react';
-import { useQuery, useMutation } from 'convex/react';
+import { nook, useNook } from 'react-nook';
 import { api } from '../convex/_generated/api';
 
 // For demo purposes. In a real app, you'd have real user data.
 const NAME = getOrSetFakeName();
 
-export default function App() {
-  const messages = useQuery(api.chat.getMessages);
+const mountMessages = nook(() => useQuery(api.chat.getMessages));
+
+const App = () => {
+  const [asleep, setAsleep] = useState(true);
+  // Mounting messages conditionally
+  const messages = useNook(() => (asleep ? [] : mountMessages``()));
   const sendMessage = useMutation(api.chat.sendMessage);
 
   const [newMessageText, setNewMessageText] = useState('');
@@ -22,10 +27,15 @@ export default function App() {
   return (
     <main className="chat">
       <header>
-        <h1>Convex Chat</h1>
-        <p>
-          Connected as <strong>{NAME}</strong>
-        </p>
+        <div>
+          <h1>Convex Chat</h1>
+          <p>
+            Connected as <strong>{NAME}</strong>
+          </p>
+        </div>
+        <button type="button" onClick={() => setAsleep(!asleep)}>
+          {asleep ? 'Wake Up' : 'Sleep'}
+        </button>
       </header>
       {messages?.map((message) => (
         <article
@@ -59,7 +69,7 @@ export default function App() {
       </form>
     </main>
   );
-}
+};
 
 function getOrSetFakeName() {
   const NAME_KEY = 'tutorial_name';
@@ -71,3 +81,5 @@ function getOrSetFakeName() {
   }
   return name;
 }
+
+export default App;

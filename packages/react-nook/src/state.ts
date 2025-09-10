@@ -40,7 +40,9 @@ export function callExpressionTrackedState<T>(
   return [cachedStore.value, cachedStore.setter];
 }
 
-export function callOrderTrackedState<T>(initial: T): readonly [T, Setter<T>] {
+export function callOrderTrackedState<T>(
+  initialOrCompute: T | (() => T),
+): readonly [T, Setter<T>] {
   const rerender = CTX.rerender;
   const scope = CTX.parentScope;
 
@@ -52,7 +54,10 @@ export function callOrderTrackedState<T>(initial: T): readonly [T, Setter<T>] {
   let cachedStore = scope.hookStores[hookIdx] as StateStore | undefined;
   if (!cachedStore) {
     const store: StateStore<T> = {
-      value: initial,
+      value:
+        typeof initialOrCompute === 'function'
+          ? (initialOrCompute as () => T)()
+          : initialOrCompute,
       setter(valueOrCompute) {
         if (typeof valueOrCompute === 'function') {
           store.value = (valueOrCompute as (prev: T) => T)(store.value);

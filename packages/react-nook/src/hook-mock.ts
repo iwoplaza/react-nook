@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { use } from 'react';
 import { callOrderTrackedCallback } from './callback.ts';
 import { CTX } from './ctx.ts';
 import { callOrderTrackedEffect } from './effect.ts';
+import { callOrderTrackedMemo } from './memo.ts';
 import { callOrderTrackedState } from './state.ts';
 import type { AnyFn, EffectCleanup } from './types.ts';
 
@@ -22,8 +23,12 @@ export function mockHooks() {
     return NOOP;
   }
 
+  const Dispatcher =
+    ReactSecretInternals?.H ??
+    ReactSecretInternals?.ReactCurrentDispatcher.current;
+
   const scope = CTX.parentScope;
-  if (!scope || !ReactSecretInternals || !ReactSecretInternals.H) {
+  if (!scope || !Dispatcher) {
     // Let's just not mock anything
     if (!WARNED) {
       console.warn(
@@ -35,33 +40,38 @@ export function mockHooks() {
     return NOOP;
   }
 
-  const originals = Object.entries(ReactSecretInternals.H);
-  for (const key of Object.keys(ReactSecretInternals.H)) {
-    ReactSecretInternals.H[key] = () => {
+  const originals = Object.entries(Dispatcher).filter(([key]) => key !== 'use');
+  for (const [key] of originals) {
+    Dispatcher[key] = () => {
       throw new Error(
         `Cannot use '${key}' inside nooks yet. Please file an issue and tell us about your use-case.`,
       );
     };
   }
 
-  ReactSecretInternals.H.useState = (valueOrCompute: unknown) =>
+  Dispatcher.useState = (valueOrCompute: unknown) =>
     callOrderTrackedState(valueOrCompute);
 
-  ReactSecretInternals.H.useEffect = (
+  Dispatcher.useEffect = (
     cb: () => EffectCleanup,
     deps?: unknown[] | undefined,
   ) => {
     callOrderTrackedEffect(cb, deps);
   };
 
-  ReactSecretInternals.H.useCallback = (
-    cb: AnyFn,
-    deps?: unknown[] | undefined,
-  ) => callOrderTrackedCallback(cb, deps);
+  Dispatcher.useCallback = (cb: AnyFn, deps?: unknown[] | undefined) =>
+    callOrderTrackedCallback(cb, deps);
+
+  Dispatcher.useMemo = (cb: AnyFn, deps?: unknown[] | undefined) =>
+    callOrderTrackedMemo(cb, deps);
+
+  Dispatcher.useContext = (ctx: React.Context<any>) => {
+    return use(ctx);
+  };
 
   return () => {
     for (const [key, value] of originals) {
-      ReactSecretInternals.H[key] = value;
+      Dispatcher[key] = value;
     }
   };
 }
